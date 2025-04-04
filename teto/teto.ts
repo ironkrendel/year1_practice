@@ -1,12 +1,12 @@
-import { createApp} from "vue";
+import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import Aura from "@primeuix/themes/aura";
-import "./style.css";
-import App from "./App.vue";
+import "/src/style.css";
+import Teto from "./Teto.vue";
 import Ripple from "primevue/ripple";
 import { definePreset } from '@primeuix/themes';
 
-const app = createApp(App);
+const app = createApp(Teto);
 
 app.use(PrimeVue, {
   theme: {
