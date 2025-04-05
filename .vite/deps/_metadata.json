@@ -1,0 +1,34 @@
+{
+  "hash": "ee308911",
+  "configHash": "4f9d1ce3",
+  "lockfileHash": "e3b0c442",
+  "browserHash": "ec007c57",
+  "optimized": {
+    "vue": {
+      "src": "../../node_modules/.deno/vue@3.5.13/node_modules/vue/dist/vue.runtime.esm-bundler.js",
+      "file": "vue.js",
+      "fileHash": "07b0bbdc",
+      "needsInterop": false
+    },
+    "primevue/config": {
+      "src": "../../node_modules/.deno/primevue@4.3.3/node_modules/primevue/config/index.mjs",
+      "file": "primevue_config.js",
+      "fileHash": "663ea95a",
+      "needsInterop": false
+    },
+    "primevue/ripple": {
+      "src": "../../node_modules/.deno/primevue@4.3.3/node_modules/primevue/ripple/index.mjs",
+      "file": "primevue_ripple.js",
+      "fileHash": "0b94ca58",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-WNUUTFY4": {
+      "file": "chunk-WNUUTFY4.js"
+    },
+    "chunk-MHIYXKIF": {
+      "file": "chunk-MHIYXKIF.js"
+    }
+  }
+}
