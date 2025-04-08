@@ -19,4 +19,13 @@ export const getDarkModeIcon = function() {
     }
     return darkmodeicon;
 }
+
+export const getDarkModeEnabled = function() {
+    if (document.documentElement.classList.contains('dark_mode_flag')) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 </script>
