@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tailwindcss-primeui";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 html, body {
   width: 100%;
   height: 100%;
