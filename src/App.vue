@@ -8,6 +8,8 @@ import VueCookies from 'vue-cookies';
 import { toggleDarkMode, getDarkModeIcon } from '/src/components/darkmodeToggle.vue';
 import dataset from "/data/test_data.json";
 import DarkModeBtn from "./components/darkmodeBtn.vue";
+import DatePicker from 'primevue/datepicker';
+import { ConfirmationService } from "primevue";
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -53,18 +55,19 @@ function updateGraphStyle(e) {
 
 const names = ref("No data");
 
-async function getNames() {
-  const options = {
-    method: "GET",
-    mode: 'cors',
-    headers: {
-      'Accept': 'application/json',
-    }
-  }
-  let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
-  const resp = await serverResponse.text();
-  names.value = resp.toString();
-}
+// async function getData() {
+//   const options = {
+//     method: "GET",
+//     mode: 'cors',
+//     headers: {
+//       'Accept': 'application/json',
+//     }
+//   }
+//   let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
+//   let resp = await serverResponse.json();
+//   console.log(this.$refs);
+//   sensorData.value = resp;
+// }
 </script>
 
 <template>
@@ -87,8 +90,12 @@ async function getNames() {
     <!-- <div style="align-items: center;width: 100%;"> -->
     <div class="w-full justify-center">
       <!-- <Button label="Get names" @click="getNames" style="margin: auto;"></Button> -->
-      <div class="w-full flex justify-center">
-        <Button label="Get names" @click="getNames"></Button>
+      <div class="w-full flex justify-center m-2">
+        <DatePicker ref="startDateTime" showTime showSeconds class="mx-1" :modelValue="defaultStartDT"></DatePicker>
+        <DatePicker ref="endDateTime" showTime showSeconds class="mx-1" :modelValue="defaultEndDT"></DatePicker>
+      </div>
+      <div class="w-full flex justify-center m-2">
+        <Button label="Get Data" @click="getData"></Button>
       </div>
       <p style="text-align: center;font-size: 50px;margin: auto;">{{ names }}</p>
       <Chart ref="graphTest" type="line" :data="data" class="h-[30rem]" :options="chartOptions"
@@ -101,6 +108,8 @@ async function getNames() {
 
 <script lang="ts">
 const chartOptions = ref();
+const defaultStartDT = ref("04/01/2025 00:28:01");
+const defaultEndDT = ref("04/01/2025 00:29:01");
 
 export default {
   created() {
@@ -110,10 +119,30 @@ export default {
   destroyed() {
     window.removeEventListener("resize", this.resizeEvent);
   },
+  mounted() {
+    
+  },
   methods: {
     resizeEvent(e) {
       this.$refs.graphTest.reinit();
-    }
+    },
+    async getData() {
+      const options = {
+        method: "GET",
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      }
+      let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
+      let resp = await serverResponse.json();
+      console.log(this.$refs.startDateTime.d_value);
+      console.log(this.$refs.endDateTime.d_value);
+      console.log(Date.parse(this.$refs.startDateTime.d_value));
+      console.log(Date.parse(this.$refs.endDateTime.d_value));
+      console.log(Date.parse(this.$refs.endDateTime.d_value) - Date.parse(this.$refs.startDateTime.d_value));
+      // this.$refs.sensorData.value = resp;
+    },
   },
 }
 const setChartOptions = () => {
