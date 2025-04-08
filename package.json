@@ -15,6 +15,7 @@
     "chart.js": "^4.4.8",
     "primeicons": "^7.0.0",
     "primevue": "^4.3.3",
+    "tailwindcss-primeui": "^0.6.1",
     "vite": "^6.2.5",
     "vue": "^3.5.13",
     "vue-cookies": "^1.8.6",

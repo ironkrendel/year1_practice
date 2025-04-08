@@ -52,6 +52,12 @@ const data = {
 function updateGraphStyle(e) {
   chartOptions.value = setChartOptions();
 }
+
+const names = ref("No data");
+
+function getNames() {
+  names.value = "names";
+}
 </script>
 
 <template>
@@ -71,7 +77,15 @@ function updateGraphStyle(e) {
       </template>
     </Menubar>
     <ScrollTop></ScrollTop>
-    <div style="align-items: center;width: 100%;">
+    <!-- <div style="align-items: center;width: 100%;"> -->
+    <!-- <div class="flex justify-content-center"> -->
+    <div class="w-full flex justify-content-center">
+      <!-- <Button label="Get names" @click="getNames" style="margin: auto;"></Button> -->
+      <div style="display: flex;justify-content: center;" class="w-full card flex">
+        <Button label="Get names" @click="getNames" style=""></Button>
+      </div>
+      <br>
+      <p style="text-align: center;font-size: 50px;margin: auto;">{{ names }}</p>
       <Chart ref="graphTest" type="line" :data="data" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;"></Chart>
     </div>
