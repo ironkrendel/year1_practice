@@ -54,9 +54,16 @@ function updateGraphStyle(e) {
 const names = ref("No data");
 
 async function getNames() {
+  const options = {
+    method: "GET",
+    mode: 'cors',
+    headers: {
+      'Accept': 'application/json',
+    }
+  }
   let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
-  console.log(await serverResponse.text());
-  names.value = "names";
+  const resp = await serverResponse.text();
+  names.value = resp.toString();
 }
 </script>
 
