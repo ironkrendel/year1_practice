@@ -23,7 +23,7 @@ const rewriteSlashToIndexHtml = () => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), rewriteSlashToIndexHtml(), tailwindcss(),],
+  plugins: [vue(), rewriteSlashToIndexHtml(), tailwindcss()],
   appType: "mpa",
   rollupOptions: {
     input: {
@@ -33,5 +33,12 @@ export default defineConfig({
   },
   server: {
     allowedHosts: ["kasaneteto.ru"],
+    proxy: {
+      '/api': {
+        target: "http://dbrobo1.mf.bmstu.ru/db_api_REST/",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      }
+    },
   },
 });

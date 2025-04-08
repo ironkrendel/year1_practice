@@ -8,8 +8,6 @@ import VueCookies from 'vue-cookies';
 import { toggleDarkMode, getDarkModeIcon } from '/src/components/darkmodeToggle.vue';
 import dataset from "/data/test_data.json";
 import DarkModeBtn from "./components/darkmodeBtn.vue";
-import InputText from 'primevue/inputtext';
-import Avatar from 'primevue/avatar';
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -56,10 +54,8 @@ function updateGraphStyle(e) {
 const names = ref("No data");
 
 async function getNames() {
-  let serverResponse = await fetch("http://dbrobo1.mf.bmstu.ru/db_api_REST/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", {
-    mode: 'no-cors',
-  });
-  console.log(serverResponse.headers);
+  let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
+  console.log(await serverResponse.text());
   names.value = "names";
 }
 </script>
@@ -120,7 +116,7 @@ const setChartOptions = () => {
   const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
 
   return {
-    // maintainAspectRatio: false,
+    maintainAspectRatio: false,
     // aspectRatio: 0.6,
     plugins: {
       legend: {
