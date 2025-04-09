@@ -44,7 +44,7 @@ const items = ref([
       </template>
     </Menubar>
     <ScrollTop></ScrollTop>
-    <div class="w-full justify-center">
+    <div class="justify-center">
       <div class="flex justify-center m-2">
         <DatePicker ref="startDateTime" showSeconds class="mx-1" :modelValue="defaultStartDT" @update:model-value="updateMinEndDT" showTime></DatePicker>
         <DatePicker ref="endDateTime" showSeconds class="mx-1" :modelValue="defaultEndDT" showTime :minDate="minEndDT"></DatePicker>
@@ -56,7 +56,7 @@ const items = ref([
       <div v-else-if='dataNames == "loading"' class="w-full flex justify-center m-2">
         <ProgressSpinner></ProgressSpinner>
       </div>
-      <div v-else class="w-full flex justify-center m-2">
+      <div v-else class="flex justify-center m-2">
         <InputGroup style="width: 15%;" class="mx-2">
           <InputGroupAddon>
               <i class="pi pi-database"></i>
@@ -127,6 +127,8 @@ export default {
           'Accept': 'application/json',
         }
       }
+      dataSerials.value = null;
+      dataFields.value = null;
       let startDate = new Date(Date.parse(this.$refs.startDateTime.d_value));
       let endDate = new Date(Date.parse(this.$refs.endDateTime.d_value));
       let startYear = startDate.getFullYear().toString().padStart(4, "0");

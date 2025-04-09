@@ -28,4 +28,8 @@ export const getDarkModeEnabled = function() {
         return false;
     }
 }
+
+export default {
+
+};
 </script>
