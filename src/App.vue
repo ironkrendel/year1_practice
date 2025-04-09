@@ -80,7 +80,7 @@ const items = ref([
         style="width:70%;margin: auto;"></Chart>
     </div>
     <div id="Top" style="position: absolute;top: 0px;"></div>
-    <h1 id="Pearto" style="font-size: 150px;margin-top: 5000px;">Pearto</h1>
+    <!-- <h1 id="Pearto" style="font-size: 150px;margin-top: 5000px;">Pearto</h1> -->
   </body>
 </template>
 
@@ -120,6 +120,8 @@ export default {
       this.$refs.dataGraph.reinit();
     },
     async getData() {
+      data.value = null;
+      chartData.value = setChartData();
       const options = {
         method: "GET",
         mode: 'cors',
@@ -146,7 +148,6 @@ export default {
       dataNames.value = "loading";
       let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
       let resp = await serverResponse.json();
-      dataNames.value = null;
       data.value = resp;
       let tmp_names = new Set();
       for (let i in Object.keys(resp)) {
@@ -154,9 +155,11 @@ export default {
         tmp_names.add(resp[i]['uName']);
       }
       dataNames.value = [];
-      for (let i in Array.from(tmp_names)) {
+      let names_arr = Array.from(tmp_names);
+      names_arr.sort();
+      for (let i in names_arr) {
         dataNames.value.push({
-          name: Array.from(tmp_names)[i],
+          name: names_arr[i],
         });
       }
     },
@@ -206,6 +209,7 @@ export default {
         }
       }
       tmp_fields = Array.from(tmp_fields);
+      tmp_fields.sort();
       dataFields.value = [];
       for (let i in tmp_fields) {
         dataFields.value.push({
@@ -221,7 +225,7 @@ export default {
   },
 }
 const setChartData = () => {
-  if (data.value != null) {
+  if (data.value != null && selectedSerial.value != null && selectedField.value != null) {
     let new_data = [];
     for (let i in Object.keys(data.value)) {
       if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
@@ -232,8 +236,19 @@ const setChartData = () => {
         new_data.push({x: data.value[i]['Date'], y: data.value[i]['data'][selectedField.value]});
       }
     }
-    new_data.reverse();
+    new_data.sort((a, b) => {
+      if (a.x < b.x) {
+        return -1;
+      }
+      if (b.x < a.x) {
+        return 1;
+      }
+      return 0;
+    });
     chartDatasets.value = [new_data];
+  }
+  else {
+    chartDatasets.value = [];
   }
 
   let result = {
