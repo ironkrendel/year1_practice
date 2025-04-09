@@ -10,6 +10,10 @@ import dataset from "/data/test_data.json";
 import DarkModeBtn from "./components/darkmodeBtn.vue";
 import DatePicker from 'primevue/datepicker';
 import { ConfirmationService } from "primevue";
+import ProgressSpinner from 'primevue/progressspinner';
+import InputGroup from 'primevue/inputgroup';
+import InputGroupAddon from 'primevue/inputgroupaddon';
+import Select from 'primevue/select';
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -21,59 +25,12 @@ const items = ref([
     href: '/teto/',
   },
 ]);
-
-let chartData = [
-
-];
-
-for (let i in dataset) {
-  if (dataset[i]['serial'] != "04" || dataset[i]['uName'] != 'Hydra-Lite') {
-    continue;
-  }
-  if (dataset[i]['data']['weather_temp'] != null) {
-    chartData.push({ x: dataset[i]['Date'], y: dataset[i]['data']['weather_temp'] });
-  }
-  else if (dataset[i]['data']['BME280_temp'] != null) {
-    chartData.push({ x: dataset[i]['Date'], y: dataset[i]['data']['BME280_temp'] });
-  }
-}
-
-const data = {
-  labels: chartData.map(row => row.x),
-  datasets: [
-    {
-      label: "Temp",
-      data: chartData.map(row => row.y),
-      lineTension: 0.25,
-    },
-  ],
-};
-
-function updateGraphStyle(e) {
-  chartOptions.value = setChartOptions();
-}
-
-const names = ref("No data");
-
-// async function getData() {
-//   const options = {
-//     method: "GET",
-//     mode: 'cors',
-//     headers: {
-//       'Accept': 'application/json',
-//     }
-//   }
-//   let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
-//   let resp = await serverResponse.json();
-//   console.log(this.$refs);
-//   sensorData.value = resp;
-// }
 </script>
 
 <template>
 
   <body>
-    <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;">
+    <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;" class="h-15">
       <template #item="{ item, props, hasSubmenu }">
         <a v-ripple :href="item.href" v-bind="props.action">
           <span>{{ item.label }}</span>
@@ -82,23 +39,44 @@ const names = ref("No data");
       <template #end>
         <div style="display: flex;column-gap: 0.25vw;justify-content: space-between;">
           <DarkModeBtn @update:model-value="updateGraphStyle"></DarkModeBtn>
-          <Button icon="pi pi-cog"></Button>
+          <!-- <Button icon="pi pi-cog"></Button> -->
         </div>
       </template>
     </Menubar>
     <ScrollTop></ScrollTop>
-    <!-- <div style="align-items: center;width: 100%;"> -->
     <div class="w-full justify-center">
-      <!-- <Button label="Get names" @click="getNames" style="margin: auto;"></Button> -->
-      <div class="w-full flex justify-center m-2">
-        <DatePicker ref="startDateTime" showTime showSeconds class="mx-1" :modelValue="defaultStartDT"></DatePicker>
-        <DatePicker ref="endDateTime" showTime showSeconds class="mx-1" :modelValue="defaultEndDT"></DatePicker>
+      <div class="flex justify-center m-2">
+        <DatePicker ref="startDateTime" showSeconds class="mx-1" :modelValue="defaultStartDT" @update:model-value="updateMinEndDT" showTime></DatePicker>
+        <DatePicker ref="endDateTime" showSeconds class="mx-1" :modelValue="defaultEndDT" showTime :minDate="minEndDT"></DatePicker>
       </div>
-      <div class="w-full flex justify-center m-2">
+      <div class="flex justify-center m-2">
         <Button label="Get Data" @click="getData"></Button>
       </div>
-      <p style="text-align: center;font-size: 50px;margin: auto;">{{ names }}</p>
-      <Chart ref="graphTest" type="line" :data="data" class="h-[30rem]" :options="chartOptions"
+      <p v-if="dataNames == null" style="text-align: center;font-size: 50px;margin: auto;">No data</p>
+      <div v-else-if='dataNames == "loading"' class="w-full flex justify-center m-2">
+        <ProgressSpinner></ProgressSpinner>
+      </div>
+      <div v-else class="w-full flex justify-center m-2">
+        <InputGroup style="width: 15%;" class="mx-2">
+          <InputGroupAddon>
+              <i class="pi pi-database"></i>
+          </InputGroupAddon>
+          <Select ref="uNameSelector" :options="dataNames" optionLabel="name" placeholder="uName" @update:model-value="updateDataSerials"></Select>
+        </InputGroup>
+        <InputGroup v-if='dataSerials != null' style="width: 15%;" class="mx-2">
+          <InputGroupAddon>
+              <i class="pi pi-database"></i>
+          </InputGroupAddon>
+          <Select ref="serialSelector" :options="dataSerials" optionLabel="serial" placeholder="Serial" @update:model-value="updateDataFields"></Select>
+        </InputGroup>
+        <InputGroup v-if='dataFields != null' style="width: 15%;" class="mx-2">
+          <InputGroupAddon>
+              <i class="pi pi-database"></i>
+          </InputGroupAddon>
+          <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField" @update:model-value="updateData"></Select>
+        </InputGroup>
+      </div>
+      <Chart :data="chartData" ref="dataGraph" type="line" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;"></Chart>
     </div>
     <div id="Top" style="position: absolute;top: 0px;"></div>
@@ -108,13 +86,28 @@ const names = ref("No data");
 
 <script lang="ts">
 const chartOptions = ref();
-const defaultStartDT = ref("04/01/2025 00:28:01");
-const defaultEndDT = ref("04/01/2025 00:29:01");
+const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+const defaultEndDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+const minEndDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+
+const data = ref(null);
+const dataNames = ref(null);
+const selectedUName = ref(null);
+const dataSerials = ref(null);
+const selectedSerial = ref(null);
+const dataFields = ref(null);
+const selectedField = ref(null);
+
+const chartDatasets = ref([]);
+const chartData = ref({});
 
 export default {
   created() {
     chartOptions.value = setChartOptions();
     window.addEventListener("resize", this.resizeEvent);
+    var currentDate = new Date();
+    defaultEndDT.value = currentDate;
+    defaultStartDT.value = new Date(currentDate - (1 * 60 * 60 * 1000));
   },
   destroyed() {
     window.removeEventListener("resize", this.resizeEvent);
@@ -124,7 +117,7 @@ export default {
   },
   methods: {
     resizeEvent(e) {
-      this.$refs.graphTest.reinit();
+      this.$refs.dataGraph.reinit();
     },
     async getData() {
       const options = {
@@ -134,16 +127,127 @@ export default {
           'Accept': 'application/json',
         }
       }
-      let serverResponse = await fetch("/api/calibr/log/2025-04-08%2008:00:00/2025-04-08%2009:00:00/", options);
+      let startDate = new Date(Date.parse(this.$refs.startDateTime.d_value));
+      let endDate = new Date(Date.parse(this.$refs.endDateTime.d_value));
+      let startYear = startDate.getFullYear().toString().padStart(4, "0");
+      let startMonth = (startDate.getMonth() + 1).toString().padStart(2, "0");
+      let startDay = startDate.getDate().toString().padStart(2, "0");
+      let startHours = startDate.getHours().toString().padStart(2, "0");
+      let startMinutes = startDate.getMinutes().toString().padStart(2, "0");
+      let startSeconds = startDate.getSeconds().toString().padStart(2, "0");
+      let endYear = endDate.getFullYear().toString().padStart(4, "0");
+      let endMonth = (endDate.getMonth() + 1).toString().padStart(2, "0");
+      let endDay = endDate.getDate().toString().padStart(2, "0");
+      let endHours = endDate.getHours().toString().padStart(2, "0");
+      let endMinutes = endDate.getMinutes().toString().padStart(2, "0");
+      let endSeconds = endDate.getSeconds().toString().padStart(2, "0");
+      dataNames.value = "loading";
+      let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
       let resp = await serverResponse.json();
-      console.log(this.$refs.startDateTime.d_value);
-      console.log(this.$refs.endDateTime.d_value);
-      console.log(Date.parse(this.$refs.startDateTime.d_value));
-      console.log(Date.parse(this.$refs.endDateTime.d_value));
-      console.log(Date.parse(this.$refs.endDateTime.d_value) - Date.parse(this.$refs.startDateTime.d_value));
-      // this.$refs.sensorData.value = resp;
+      dataNames.value = null;
+      data.value = resp;
+      let tmp_names = new Set();
+      for (let i in Object.keys(resp)) {
+        if (resp[i]['uName'] == "NONE") continue;
+        tmp_names.add(resp[i]['uName']);
+      }
+      dataNames.value = [];
+      for (let i in Array.from(tmp_names)) {
+        dataNames.value.push({
+          name: Array.from(tmp_names)[i],
+        });
+      }
     },
+    updateMinEndDT(e) {
+      minEndDT.value = e;
+      if (this.$refs.endDateTime.d_value < this.$refs.startDateTime.d_value) {
+        this.$refs.endDateTime.d_value = this.$refs.startDateTime.d_value;
+      }
+    },
+    updateGraphStyle(e) {
+      chartOptions.value = setChartOptions();
+    },
+    updateDataSerials(e) {
+      selectedUName.value = e.name;
+      selectedSerial.value = null;
+      selectedField.value = null;
+      dataSerials.value = null;
+      dataFields.value = null;
+      if (this.$refs.serialSelector != null) {
+        this.$refs.serialSelector.d_value = null;
+      }
+      let tmp_serials = new Set();
+      for (let i in Object.keys(data.value)) {
+        if (data.value[i]['uName'] != e.name) continue;
+        tmp_serials.add(data.value[i]['serial']);
+      }
+      tmp_serials = Array.from(tmp_serials);
+      tmp_serials.sort();
+      dataSerials.value = [];
+      for (let i in tmp_serials) {
+        dataSerials.value.push({
+          serial: tmp_serials[i],
+        });
+      }
+      chartData.value = setChartData();
+    },
+    updateDataFields(e) {
+      selectedSerial.value = e.serial;
+      let tmp_fields = new Set();
+      for (let i in Object.keys(data.value)) {
+        if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
+        for (let j = 0;j < Object.keys(data.value[i]['data']).length;j++) {
+          if (typeof(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
+            continue;
+          }
+          tmp_fields.add(Object.keys(data.value[i]['data'])[j]);
+        }
+      }
+      tmp_fields = Array.from(tmp_fields);
+      dataFields.value = [];
+      for (let i in tmp_fields) {
+        dataFields.value.push({
+          field: tmp_fields[i],
+        });
+      }
+      chartData.value = setChartData();
+    },
+    updateData(e) {
+      selectedField.value = e.field;
+      chartData.value = setChartData();
+    }
   },
+}
+const setChartData = () => {
+  if (data.value != null) {
+    let new_data = [];
+    for (let i in Object.keys(data.value)) {
+      if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
+      if (typeof(data.value[i]['data'][selectedField.value]) != "number") {
+        new_data.push({x: data.value[i]['Date'], y: parseFloat(data.value[i]['data'][selectedField.value])});
+      }
+      else {
+        new_data.push({x: data.value[i]['Date'], y: data.value[i]['data'][selectedField.value]});
+      }
+    }
+    new_data.reverse();
+    chartDatasets.value = [new_data];
+  }
+
+  let result = {
+    datasets: [
+
+    ],
+  };
+  for (let i in chartDatasets.value) {
+    if (selectedField.value == null || chartDatasets.value == null) break;
+    result.datasets.push({
+      label: selectedField.value.toString(),
+      data: chartDatasets.value[i],
+      tension: 0.4,
+    });
+  }
+  return result;
 }
 const setChartOptions = () => {
   const documentStyle = getComputedStyle(document.documentElement);
@@ -151,7 +255,7 @@ const setChartOptions = () => {
   const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
   const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
 
-  return {
+  let result = {
     maintainAspectRatio: false,
     // aspectRatio: 0.6,
     plugins: {
@@ -180,5 +284,7 @@ const setChartOptions = () => {
       }
     }
   };
+
+  return result;
 }
 </script>

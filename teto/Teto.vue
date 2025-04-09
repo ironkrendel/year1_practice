@@ -5,6 +5,7 @@ import { ref } from "vue";
 import VueCookies from 'vue-cookies';
 import { toggleDarkMode } from '/src/components/darkmodeToggle.vue';
 import DarkModeBtn from "/src/components/darkmodeBtn.vue";
+import ScrollTop from 'primevue/scrolltop';
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -12,15 +13,17 @@ if (localStorage.getItem('dark-mode') == "true") {
 </script>
 
 <template>
-  <Menubar style="position: sticky;top: 0px;z-index: 100;">
+  <Menubar style="position: sticky;top: 0px;z-index: 100;width: 100%;">
     <template #start>
+      <Button as="a" icon="pi pi-chevron-left" href="/"></Button>
+    </template>
+    <template #end>
       <DarkModeBtn></DarkModeBtn>
-      <Button as="a" label="Back" href="/"></Button>
     </template>
   </Menubar>
-  <br>
-  <div>
-    <img v-for="item in items" :src="item.img">
+  <ScrollTop></ScrollTop>
+  <div class="w-full">
+    <img v-for="item in items" :src="item.img" class="inline-block">
   </div>
 </template>
 
@@ -32,7 +35,7 @@ if (localStorage.getItem('dark-mode') == "true") {
 
 <script lang="ts">
 let items = ref([]);
-for (let i = 0;i < 10000;i++) {
+for (let i = 0;i < 1000;i++) {
   items.value.push({
     img: '/favicon.ico',
   });
