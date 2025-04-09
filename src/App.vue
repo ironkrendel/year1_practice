@@ -53,7 +53,7 @@ const items = ref([
         <Button label="Get Data" @click="getData"></Button>
       </div>
       <p v-if="dataNames == null" style="text-align: center;font-size: 50px;margin: auto;">No data</p>
-      <div v-else-if='dataNames == "loading"' class="w-full flex justify-center m-2">
+      <div v-else-if='dataNames == "loading"' class="flex justify-center m-2">
         <ProgressSpinner></ProgressSpinner>
       </div>
       <div v-else class="flex justify-center m-2">
