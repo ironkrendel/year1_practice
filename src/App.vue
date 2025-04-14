@@ -9,7 +9,7 @@ import { toggleDarkMode, getDarkModeIcon } from '/src/components/darkmodeToggle.
 import dataset from "/data/test_data.json";
 import DarkModeBtn from "./components/darkmodeBtn.vue";
 import DatePicker from 'primevue/datepicker';
-import { ConfirmationService } from "primevue";
+import { ConfirmationService, IftaLabelStyle, StepItemStyle } from "primevue";
 import ProgressSpinner from 'primevue/progressspinner';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
@@ -46,8 +46,10 @@ const items = ref([
     <ScrollTop></ScrollTop>
     <div class="justify-center">
       <div class="flex justify-center m-2">
-        <DatePicker ref="startDateTime" showSeconds class="mx-1" :modelValue="defaultStartDT" @update:model-value="updateMinEndDT" showTime></DatePicker>
-        <DatePicker ref="endDateTime" showSeconds class="mx-1" :modelValue="defaultEndDT" showTime :minDate="minEndDT"></DatePicker>
+        <DatePicker ref="startDateTime" showSeconds class="mx-1" :modelValue="defaultStartDT"
+          @update:model-value="updateMinEndDT" showTime></DatePicker>
+        <DatePicker ref="endDateTime" showSeconds class="mx-1" :modelValue="defaultEndDT" showTime :minDate="minEndDT">
+        </DatePicker>
       </div>
       <div class="flex justify-center m-2">
         <Button label="Get Data" @click="getData"></Button>
@@ -59,25 +61,33 @@ const items = ref([
       <div v-else class="flex justify-center m-2">
         <InputGroup style="width: 15%;" class="mx-2">
           <InputGroupAddon>
-              <i class="pi pi-database"></i>
+            <i class="pi pi-database"></i>
           </InputGroupAddon>
-          <Select ref="uNameSelector" :options="dataNames" optionLabel="name" placeholder="uName" @update:model-value="updateDataSerials"></Select>
+          <Select ref="uNameSelector" :options="dataNames" optionLabel="name" placeholder="uName"
+            @update:model-value="updateDataSerials"></Select>
         </InputGroup>
         <InputGroup v-if='dataSerials != null' style="width: 15%;" class="mx-2">
           <InputGroupAddon>
-              <i class="pi pi-database"></i>
+            <i class="pi pi-database"></i>
           </InputGroupAddon>
-          <Select ref="serialSelector" :options="dataSerials" optionLabel="serial" placeholder="Serial" @update:model-value="updateDataFields"></Select>
+          <Select ref="serialSelector" :options="dataSerials" optionLabel="serial" placeholder="Serial"
+            @update:model-value="updateDataFields"></Select>
         </InputGroup>
         <InputGroup v-if='dataFields != null' style="width: 15%;" class="mx-2">
           <InputGroupAddon>
-              <i class="pi pi-database"></i>
+            <i class="pi pi-database"></i>
           </InputGroupAddon>
-          <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField" @update:model-value="updateData"></Select>
+          <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
+            @update:model-value="updateData"></Select>
         </InputGroup>
+        <Button v-if="selectedUName != null" icon="pi pi-times"></Button>
       </div>
-      <Chart :data="chartData" ref="dataGraph" type="line" class="h-[30rem]" :options="chartOptions"
-        style="width:70%;margin: auto;"></Chart>
+      <div v-if="chartDatasets.length > 0" class="flex justify-center m-2">
+        <Button icon="pi pi-plus"></Button>
+      </div>
+      <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
+        style="width:70%;margin: auto;">
+      </Chart>
     </div>
     <div id="Top" style="position: absolute;top: 0px;"></div>
     <!-- <h1 id="Pearto" style="font-size: 150px;margin-top: 5000px;">Pearto</h1> -->
@@ -85,6 +95,8 @@ const items = ref([
 </template>
 
 <script lang="ts">
+import { useTemplateRef } from 'vue'
+
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
 const defaultEndDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -101,6 +113,14 @@ const selectedField = ref(null);
 const chartDatasets = ref([]);
 const chartData = ref({});
 
+const minXVal = ref(0);
+const maxXVal = ref(1);
+
+// const startDateTime = useTemplateRef('startDateTime');
+let startDateTime = ref(null);
+// let endDateTime = useTemplateRef('endDateTime');
+let endDateTime = ref(null);
+
 export default {
   created() {
     chartOptions.value = setChartOptions();
@@ -113,7 +133,9 @@ export default {
     window.removeEventListener("resize", this.resizeEvent);
   },
   mounted() {
-    
+    startDateTime = useTemplateRef('startDateTime');
+    endDateTime = useTemplateRef('endDateTime');
+    // chartOptions.value.options = setChartOptions();
   },
   methods: {
     resizeEvent(e) {
@@ -122,6 +144,7 @@ export default {
     async getData() {
       data.value = null;
       chartData.value = setChartData();
+      chartOptions.value = setChartOptions();
       const options = {
         method: "GET",
         mode: 'cors',
@@ -195,14 +218,15 @@ export default {
         });
       }
       chartData.value = setChartData();
+      chartOptions.value = setChartOptions();
     },
     updateDataFields(e) {
       selectedSerial.value = e.serial;
       let tmp_fields = new Set();
       for (let i in Object.keys(data.value)) {
         if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-        for (let j = 0;j < Object.keys(data.value[i]['data']).length;j++) {
-          if (typeof(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
+        for (let j = 0; j < Object.keys(data.value[i]['data']).length; j++) {
+          if (typeof (data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
             continue;
           }
           tmp_fields.add(Object.keys(data.value[i]['data'])[j]);
@@ -217,23 +241,29 @@ export default {
         });
       }
       chartData.value = setChartData();
+      chartOptions.value = setChartOptions();
     },
     updateData(e) {
       selectedField.value = e.field;
       chartData.value = setChartData();
+      chartOptions.value = setChartOptions();
     }
   },
 }
-const setChartData = () => {
+let setChartData = () => {
   if (data.value != null && selectedSerial.value != null && selectedField.value != null) {
+    let startDate = Date.parse(startDateTime.value.d_value);
+    let endDate = Date.parse(endDateTime.value.d_value);
     let new_data = [];
+    minXVal.value = startDate;
+    maxXVal.value = endDate;
     for (let i in Object.keys(data.value)) {
       if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-      if (typeof(data.value[i]['data'][selectedField.value]) != "number") {
-        new_data.push({x: data.value[i]['Date'], y: parseFloat(data.value[i]['data'][selectedField.value])});
+      if (typeof (data.value[i]['data'][selectedField.value]) != "number") {
+        new_data.push({ x: Date.parse(data.value[i]['Date']), y: parseFloat(data.value[i]['data'][selectedField.value]) });
       }
       else {
-        new_data.push({x: data.value[i]['Date'], y: data.value[i]['data'][selectedField.value]});
+        new_data.push({ x: Date.parse(data.value[i]['Date']), y: data.value[i]['data'][selectedField.value] });
       }
     }
     new_data.sort((a, b) => {
@@ -259,9 +289,11 @@ const setChartData = () => {
   for (let i in chartDatasets.value) {
     if (selectedField.value == null || chartDatasets.value == null) break;
     result.datasets.push({
+      type: 'scatter',
+      showLine: true,
       label: selectedField.value.toString(),
       data: chartDatasets.value[i],
-      tension: 0.4,
+      tension: 0.2,
     });
   }
   return result;
@@ -280,12 +312,40 @@ const setChartOptions = () => {
         labels: {
           color: textColor
         }
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context) {
+            let label = context.dataset.label || '';
+
+            if (label) {
+              label += ': (';
+            }
+            if (context.parsed.x !== null) {
+              label += (new Date(context.parsed.x)).toLocaleString() + "; ";
+            }
+            if (context.parsed.y !== null) {
+              label += context.parsed.y;
+            }
+            label += ")"
+            return label;
+          }
+        }
       }
     },
     scales: {
       x: {
+        min: minXVal.value,
+        max: maxXVal.value,
         ticks: {
-          color: textColorSecondary
+          // stepSize: 100000 / 2,
+          precision: 5,
+          autoSkip: true,
+          minRotation: 45,
+          color: textColorSecondary,
+          callback: function (value, index, ticks) {
+            return (new Date(value)).toLocaleString();
+          }
         },
         grid: {
           color: surfaceBorder
@@ -299,7 +359,7 @@ const setChartOptions = () => {
           color: surfaceBorder
         }
       }
-    }
+    },
   };
 
   return result;
