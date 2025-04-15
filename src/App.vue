@@ -14,6 +14,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import dataFieldSelector from "./components/dataFieldSelector.vue";
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -59,7 +60,7 @@ const items = ref([
         <ProgressSpinner></ProgressSpinner>
       </div>
       <div v-else class="flex justify-center m-2">
-        <InputGroup style="width: 15%;" class="mx-2">
+        <!-- <InputGroup style="width: 15%;" class="mx-2">
           <InputGroupAddon>
             <i class="pi pi-database"></i>
           </InputGroupAddon>
@@ -80,7 +81,8 @@ const items = ref([
           <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
             @update:model-value="updateData"></Select>
         </InputGroup>
-        <Button v-if="selectedUName != null" icon="pi pi-times"></Button>
+        <Button v-if="selectedUName != null" icon="pi pi-times"></Button> -->
+        <dataFieldSelector :data="data" ref="testDataField"></dataFieldSelector>
       </div>
       <div v-if="chartDatasets.length > 0" class="flex justify-center m-2">
         <Button icon="pi pi-plus"></Button>
@@ -95,7 +97,7 @@ const items = ref([
 </template>
 
 <script lang="ts">
-import { useTemplateRef } from 'vue'
+import { useTemplateRef } from 'vue';
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -120,6 +122,7 @@ const maxXVal = ref(1);
 let startDateTime = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
 let endDateTime = ref(null);
+let testDataField = ref(null);
 
 export default {
   created() {
@@ -135,6 +138,7 @@ export default {
   mounted() {
     startDateTime = useTemplateRef('startDateTime');
     endDateTime = useTemplateRef('endDateTime');
+    testDataField = useTemplateRef('testDataField');
     // chartOptions.value.options = setChartOptions();
   },
   methods: {
@@ -169,22 +173,27 @@ export default {
       let endMinutes = endDate.getMinutes().toString().padStart(2, "0");
       let endSeconds = endDate.getSeconds().toString().padStart(2, "0");
       dataNames.value = "loading";
-      let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
-      let resp = await serverResponse.json();
+      // let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
+      // if (serverResponse.status != 200) {
+        // dataNames.value = null;
+        // return;
+      // }
+      // let resp = await serverResponse.json();
+      let resp = (await import('/data/test_data.json')).default;
       data.value = resp;
-      let tmp_names = new Set();
-      for (let i in Object.keys(resp)) {
-        if (resp[i]['uName'] == "NONE") continue;
-        tmp_names.add(resp[i]['uName']);
-      }
+      // let tmp_names = new Set();
+      // for (let i in Object.keys(resp)) {
+        // if (resp[i]['uName'] == "NONE") continue;
+        // tmp_names.add(resp[i]['uName']);
+      // }
       dataNames.value = [];
-      let names_arr = Array.from(tmp_names);
-      names_arr.sort();
-      for (let i in names_arr) {
-        dataNames.value.push({
-          name: names_arr[i],
-        });
-      }
+      // let names_arr = Array.from(tmp_names);
+      // names_arr.sort();
+      // for (let i in names_arr) {
+        // dataNames.value.push({
+          // name: names_arr[i],
+        // });
+      // }
     },
     updateMinEndDT(e) {
       minEndDT.value = e;
@@ -335,8 +344,8 @@ const setChartOptions = () => {
     },
     scales: {
       x: {
-        min: minXVal.value,
-        max: maxXVal.value,
+        // min: minXVal.value,
+        // max: maxXVal.value,
         ticks: {
           // stepSize: 100000 / 2,
           precision: 5,
@@ -352,6 +361,8 @@ const setChartOptions = () => {
         }
       },
       y: {
+        min: 0,
+        max: 50,
         ticks: {
           color: textColorSecondary
         },
