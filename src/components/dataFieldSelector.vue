@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from "vue";
+import { defineComponent, ref, useTemplateRef } from "vue";
 import { Vue, setup } from 'vue-class-component';
 import Button from "primevue/button";
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import { toRefs, toRef } from 'vue'
 
-const data = ref(null);
+const dataJSON = ref(null);
 const dataNames = ref(null);
 const selectedUName = ref(null);
 const dataSerials = ref(null);
@@ -16,10 +17,12 @@ const selectedField = ref(null);
 
 const serialSelectorRef = useTemplateRef<HTMLElement | null>('serialSelector');
 
-const props = defineProps(['data']);
-const emits = defineEmits(['update:output']);
+const props = defineProps(['data', 'id']);
+const emits = defineEmits(['update:output', 'delete']);
 
-data.value = props.data;
+const outputRef = toRef(props.output);
+
+dataJSON.value = props.data;
 let tmp_names = new Set();
 for (let i in Object.keys(props.data)) {
     if (props.data[i]['uName'] == "NULL") continue;
@@ -44,9 +47,9 @@ function updateDataSerials(e) {
         serialSelectorRef.value.d_value = null;
     }
     let tmp_serials = new Set();
-    for (let i in Object.keys(data.value)) {
-        if (data.value[i]['uName'] != e.name) continue;
-        tmp_serials.add(data.value[i]['serial']);
+    for (let i in Object.keys(dataJSON.value)) {
+        if (dataJSON.value[i]['uName'] != e.name) continue;
+        tmp_serials.add(dataJSON.value[i]['serial']);
     }
     tmp_serials = Array.from(tmp_serials);
     tmp_serials.sort();
@@ -61,13 +64,13 @@ function updateDataSerials(e) {
 function updateDataFields(e) {
     selectedSerial.value = e.serial;
     let tmp_fields = new Set();
-    for (let i in Object.keys(data.value)) {
-        if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-        for (let j = 0; j < Object.keys(data.value[i]['data']).length; j++) {
-            if (typeof (data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
+    for (let i in Object.keys(dataJSON.value)) {
+        if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
+        for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
+            if (typeof (dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]))) {
                 continue;
             }
-            tmp_fields.add(Object.keys(data.value[i]['data'])[j]);
+            tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
         }
     }
     tmp_fields = Array.from(tmp_fields);
@@ -82,7 +85,16 @@ function updateDataFields(e) {
 
 function updateData(e) {
     selectedField.value = e.field;
-    emits('update:output', e.field);
+    emits('update:output', {
+        id: props.id,
+        data: e.field
+    });
+}
+
+function selfDestruct(e) {
+    emits('delete', {
+        id: props.id,
+    });
 }
 </script>
 
@@ -112,7 +124,7 @@ function updateData(e) {
             <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
                 @update:model-value="updateData"></Select>
         </InputGroup>
-        <Button v-if="selectedField != null" icon="pi pi-times" style="width: 125px;"></Button>
+        <Button v-if="selectedField != null" icon="pi pi-times" style="width: 125px;" @click="selfDestruct"></Button>
     </div>
 </template>
 
@@ -136,7 +148,7 @@ function updateData(e) {
 //     props: ['data', 'output'],
 //     emits: ['update:output'],
 //     mounted() {
-//         data.value = this.data;
+//         dataJSON.value = this.data;
 //         let tmp_names = new Set();
 //         for (let i in Object.keys(this.data)) {
 //             if (this.data[i]['uName'] == "NULL") continue;
@@ -162,9 +174,9 @@ function updateData(e) {
 //                 this.$refs.serialSelector.d_value = null;
 //             }
 //             let tmp_serials = new Set();
-//             for (let i in Object.keys(data.value)) {
-//                 if (data.value[i]['uName'] != e.name) continue;
-//                 tmp_serials.add(data.value[i]['serial']);
+//             for (let i in Object.keys(dataJSON.value)) {
+//                 if (dataJSON.value[i]['uName'] != e.name) continue;
+//                 tmp_serials.add(dataJSON.value[i]['serial']);
 //             }
 //             tmp_serials = Array.from(tmp_serials);
 //             tmp_serials.sort();
@@ -178,13 +190,13 @@ function updateData(e) {
 //         updateDataFields(e) {
 //             selectedSerial.value = e.serial;
 //             let tmp_fields = new Set();
-//             for (let i in Object.keys(data.value)) {
-//                 if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-//                 for (let j = 0; j < Object.keys(data.value[i]['data']).length; j++) {
-//                     if (typeof (data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
+//             for (let i in Object.keys(dataJSON.value)) {
+//                 if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
+//                 for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
+//                     if (typeof (dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]))) {
 //                         continue;
 //                     }
-//                     tmp_fields.add(Object.keys(data.value[i]['data'])[j]);
+//                     tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
 //                 }
 //             }
 //             tmp_fields = Array.from(tmp_fields);

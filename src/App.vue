@@ -83,13 +83,14 @@ const items = ref([
         </InputGroup>
         <Button v-if="selectedUName != null" icon="pi pi-times"></Button> -->
         <div ref="testRef">
-          <div v-for="i in chartDatasets" style="display: flex;flex-direction: column;">
-            <dataFieldSelector :data="data" ref="testDataField" @update:output="(e) => {console.log(e)}"></dataFieldSelector>
+          <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
+            <!-- <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector> -->
+            {{ i }}
           </div>
         </div>
       </div>
       <div v-if="dataNames != null && dataNames != 'loading'" class="flex justify-center m-2">
-        <Button icon="pi pi-plus" @click="chartDatasets.push('teto')"></Button>
+        <Button icon="pi pi-plus" @click="addDataset"></Button>
       </div>
       <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;">
@@ -101,7 +102,7 @@ const items = ref([
 </template>
 
 <script lang="ts">
-import { useTemplateRef } from 'vue';
+import { useTemplateRef, defineComponent, Vue } from 'vue';
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -119,6 +120,8 @@ const selectedField = ref(null);
 const chartDatasets = ref([]);
 const chartData = ref({});
 
+const fieldSelectors = ref([]);
+
 const minXVal = ref(0);
 const maxXVal = ref(1);
 
@@ -127,6 +130,8 @@ let startDateTime = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
 let endDateTime = ref(null);
 let testDataField = ref(null);
+
+let currentID = 0;
 
 export default {
   created() {
@@ -260,6 +265,27 @@ export default {
       selectedField.value = e.field;
       chartData.value = setChartData();
       chartOptions.value = setChartOptions();
+    },
+    addDataset(e) {
+      // fieldSelectors.value.push(currentID++);
+      let testClass = defineComponent(dataFieldSelector);
+      fieldSelectors.value.push(new testClass());
+      console.log(fieldSelectors.value);
+    },
+    removeDataset(e) {
+      console.log(e);
+      let new_field_selectors = [];
+      for (let i = 0;i < fieldSelectors.value.length;i++) {
+        console.log(fieldSelectors.value[i]);
+        if (e.id == fieldSelectors.value[i].id) {
+          continue;
+        }
+        new_field_selectors.push(fieldSelectors.value[i]);
+      }
+      fieldSelectors.value = new_field_selectors;
+    },
+    testFunc(e) {
+      console.log(e);
     },
   },
 }
