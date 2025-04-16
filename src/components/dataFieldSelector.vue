@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { defineComponent, ref, useTemplateRef } from "vue";
-import { Vue, setup } from 'vue-class-component';
+import { ref, useTemplateRef } from "vue";
 import Button from "primevue/button";
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
-import { toRefs, toRef } from 'vue'
+import { toRef } from 'vue'
 
 const dataJSON = ref(null);
 const dataNames = ref(null);
@@ -123,6 +122,7 @@ function emitNewData() {
     emits('updateOutput', {
         id: props.id,
         data: new_data,
+        label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
     });
 }
 

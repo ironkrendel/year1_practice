@@ -221,59 +221,18 @@ export default {
     updateGraphStyle(e) {
       chartOptions.value = setChartOptions();
     },
-    updateDataSerials(e) {
-      selectedUName.value = e.name;
-      selectedSerial.value = null;
-      selectedField.value = null;
-      dataSerials.value = null;
-      dataFields.value = null;
-      if (this.$refs.serialSelector != null) {
-        this.$refs.serialSelector.d_value = null;
-      }
-      let tmp_serials = new Set();
-      for (let i in Object.keys(data.value)) {
-        if (data.value[i]['uName'] != e.name) continue;
-        tmp_serials.add(data.value[i]['serial']);
-      }
-      tmp_serials = Array.from(tmp_serials);
-      tmp_serials.sort();
-      dataSerials.value = [];
-      for (let i in tmp_serials) {
-        dataSerials.value.push({
-          serial: tmp_serials[i],
-        });
-      }
-      chartData.value = setChartData();
-      chartOptions.value = setChartOptions();
-    },
-    updateDataFields(e) {
-      selectedSerial.value = e.serial;
-      let tmp_fields = new Set();
-      for (let i in Object.keys(data.value)) {
-        if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-        for (let j = 0; j < Object.keys(data.value[i]['data']).length; j++) {
-          if (typeof (data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(data.value[i]['data'][Object.keys(data.value[i]['data'])[j]]))) {
-            continue;
-          }
-          tmp_fields.add(Object.keys(data.value[i]['data'])[j]);
-        }
-      }
-      tmp_fields = Array.from(tmp_fields);
-      tmp_fields.sort();
-      dataFields.value = [];
-      for (let i in tmp_fields) {
-        dataFields.value.push({
-          field: tmp_fields[i],
-        });
-      }
-      chartData.value = setChartData();
-      chartOptions.value = setChartOptions();
-    },
-    updateData(e) {
-      selectedField.value = e.field;
-      chartData.value = setChartData();
-      chartOptions.value = setChartOptions();
-    },
+    // updateDataSerials(e) {
+    //   chartData.value = setChartData();
+    //   chartOptions.value = setChartOptions();
+    // },
+    // updateDataFields(e) {
+    //   chartData.value = setChartData();
+    //   chartOptions.value = setChartOptions();
+    // },
+    // updateData(e) {
+    //   chartData.value = setChartData();
+    //   chartOptions.value = setChartOptions();
+    // },
     addDataSelector(e) {
       // fieldSelectors.value.push(currentID++);
       // let testClass = defineComponent(dataFieldSelector);
@@ -338,6 +297,7 @@ export default {
       for (let i = 0; i < associatedDatasets.value.length; i++) {
         if (associatedDatasets.value[i].id == e.id) {
           associatedDatasets.value[i].data = e.data;
+          associatedDatasets.value[i].label = e.label;
           return;
         }
       }
@@ -403,6 +363,11 @@ let setChartData = () => {
   //   });
   // }
   // return result;
+  let startDate = Date.parse(startDateTime.value.d_value);
+  let endDate = Date.parse(endDateTime.value.d_value);
+  minXVal.value = startDate;
+  maxXVal.value = endDate;
+
   let result = {
     datasets: [
 
@@ -413,7 +378,7 @@ let setChartData = () => {
     result.datasets.push({
       type: 'scatter',
       showLine: true,
-      label: `teto${i}`,
+      label: associatedDatasets.value[i].label,
       data: associatedDatasets.value[i].data,
       tension: 0.2,
     });
@@ -458,8 +423,8 @@ const setChartOptions = () => {
     },
     scales: {
       x: {
-        // min: minXVal.value,
-        // max: maxXVal.value,
+        min: minXVal.value,
+        max: maxXVal.value,
         ticks: {
           // stepSize: 100000 / 2,
           // precision: 5,
