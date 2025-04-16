@@ -82,15 +82,14 @@ const items = ref([
             @update:model-value="updateData"></Select>
         </InputGroup>
         <Button v-if="selectedUName != null" icon="pi pi-times"></Button> -->
-        <div ref="testRef">
-          <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
-            <!-- <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector> -->
-            {{ i }}
-          </div>
+        <div ref="fieldSelectorsContainer">
+          <!-- <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
+            <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector>
+          </div> -->
         </div>
       </div>
       <div v-if="dataNames != null && dataNames != 'loading'" class="flex justify-center m-2">
-        <Button icon="pi pi-plus" @click="addDataset"></Button>
+        <Button icon="pi pi-plus" @click="addDataSelector"></Button>
       </div>
       <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;">
@@ -102,7 +101,11 @@ const items = ref([
 </template>
 
 <script lang="ts">
-import { useTemplateRef, defineComponent, Vue } from 'vue';
+import { useTemplateRef, defineComponent, createApp } from 'vue';
+import PrimeVue from "primevue/config";
+import ThemePreset from './components/themePreset.vue';
+import Ripple from "primevue/ripple";
+import { fileURLToPath } from "url";
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -120,7 +123,10 @@ const selectedField = ref(null);
 const chartDatasets = ref([]);
 const chartData = ref({});
 
+const fieldSelectorsContainer = ref(null);
 const fieldSelectors = ref([]);
+
+const associatedDatasets = ref([]);
 
 const minXVal = ref(0);
 const maxXVal = ref(1);
@@ -148,6 +154,7 @@ export default {
     startDateTime = useTemplateRef('startDateTime');
     endDateTime = useTemplateRef('endDateTime');
     testDataField = useTemplateRef('testDataField');
+    // fieldSelectorsContainer = useTemplateRef('fieldSelectorsContainer');
     // chartOptions.value.options = setChartOptions();
   },
   methods: {
@@ -155,6 +162,7 @@ export default {
       this.$refs.dataGraph.reinit();
     },
     async getData() {
+      this.clearAllDataSelectors();
       data.value = null;
       chartData.value = setChartData();
       chartOptions.value = setChartOptions();
@@ -182,27 +190,27 @@ export default {
       let endMinutes = endDate.getMinutes().toString().padStart(2, "0");
       let endSeconds = endDate.getSeconds().toString().padStart(2, "0");
       dataNames.value = "loading";
-      // let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
-      // if (serverResponse.status != 200) {
-      // dataNames.value = null;
-      // return;
-      // }
-      // let resp = await serverResponse.json();
-      let resp = (await import('/data/test_data.json')).default;
+      let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
+      if (serverResponse.status != 200) {
+        dataNames.value = null;
+        return;
+      }
+      let resp = await serverResponse.json();
+      // let resp = (await import('/data/test_data.json')).default;
       data.value = resp;
-      // let tmp_names = new Set();
-      // for (let i in Object.keys(resp)) {
-      // if (resp[i]['uName'] == "NONE") continue;
-      // tmp_names.add(resp[i]['uName']);
-      // }
+      let tmp_names = new Set();
+      for (let i in Object.keys(resp)) {
+        if (resp[i]['uName'] == "NONE") continue;
+        tmp_names.add(resp[i]['uName']);
+      }
       dataNames.value = [];
-      // let names_arr = Array.from(tmp_names);
-      // names_arr.sort();
-      // for (let i in names_arr) {
-      // dataNames.value.push({
-      // name: names_arr[i],
-      // });
-      // }
+      let names_arr = Array.from(tmp_names);
+      names_arr.sort();
+      for (let i in names_arr) {
+        dataNames.value.push({
+          name: names_arr[i],
+        });
+      }
     },
     updateMinEndDT(e) {
       minEndDT.value = e;
@@ -266,23 +274,82 @@ export default {
       chartData.value = setChartData();
       chartOptions.value = setChartOptions();
     },
-    addDataset(e) {
+    addDataSelector(e) {
       // fieldSelectors.value.push(currentID++);
-      let testClass = defineComponent(dataFieldSelector);
-      fieldSelectors.value.push(new testClass());
-      console.log(fieldSelectors.value);
+      // let testClass = defineComponent(dataFieldSelector);
+      // fieldSelectors.value.push(new testClass());
+      // console.log(fieldSelectors.value);
+      const mountPoint = document.createElement("div");
+      fieldSelectorsContainer.value.appendChild(mountPoint);
+
+      let id = currentID++;
+      const app = createApp(dataFieldSelector, {
+        data: data.value,
+        id: id,
+        startDateTime: startDateTime.value.d_value,
+        endDateTime: endDateTime.value.d_value,
+
+        onDeleteEmit: (e) => {
+          this.removeDataSelector(e);
+          chartData.value = setChartData();
+        },
+        onUpdateOutput: (e) => {
+          this.registerDataset(e);
+          chartData.value = setChartData();
+        },
+      });
+      app.use(PrimeVue, {
+        theme: {
+          preset: ThemePreset.data()['Theme'],
+          options: {
+            prefix: "p",
+            darkModeSelector: ".dark_mode_flag",
+            cssLayer: false,
+          },
+        },
+        ripple: true,
+      });
+
+      app.directive("ripple", Ripple);
+      app.mount(mountPoint);
+      fieldSelectors.value.push({ app, mountPoint, id, });
     },
-    removeDataset(e) {
-      console.log(e);
-      let new_field_selectors = [];
-      for (let i = 0;i < fieldSelectors.value.length;i++) {
-        console.log(fieldSelectors.value[i]);
-        if (e.id == fieldSelectors.value[i].id) {
-          continue;
+    removeDataSelector(e) {
+      for (let i = 0; i < fieldSelectors.value.length; i++) {
+        if (fieldSelectors.value[i].id == e.id) {
+          fieldSelectors.value[i].app.unmount();
+          fieldSelectorsContainer.value.removeChild(fieldSelectors.value[i].mountPoint);
+          fieldSelectors.value.splice(i, 1);
+          this.deregisterDataset(e);
+          break;
         }
-        new_field_selectors.push(fieldSelectors.value[i]);
       }
-      fieldSelectors.value = new_field_selectors;
+    },
+    clearAllDataSelectors() {
+      let ids = [];
+      for (let i = 0; i < fieldSelectors.value.length; i++) {
+        ids.push(fieldSelectors.value[i].id);
+      }
+      for (let i = 0; i < ids.length; i++) {
+        this.removeDataSelector({ id: ids[i] });
+      }
+    },
+    registerDataset(e) {
+      for (let i = 0; i < associatedDatasets.value.length; i++) {
+        if (associatedDatasets.value[i].id == e.id) {
+          associatedDatasets.value[i].data = e.data;
+          return;
+        }
+      }
+      associatedDatasets.value.push(e);
+    },
+    deregisterDataset(e) {
+      for (let i = 0; i < associatedDatasets.value.length; i++) {
+        if (associatedDatasets.value[i].id == e.id) {
+          associatedDatasets.value.splice(i, 1);
+          return;
+        }
+      }
     },
     testFunc(e) {
       console.log(e);
@@ -290,51 +357,68 @@ export default {
   },
 }
 let setChartData = () => {
-  if (data.value != null && selectedSerial.value != null && selectedField.value != null) {
-    let startDate = Date.parse(startDateTime.value.d_value);
-    let endDate = Date.parse(endDateTime.value.d_value);
-    let new_data = [];
-    minXVal.value = startDate;
-    maxXVal.value = endDate;
-    for (let i in Object.keys(data.value)) {
-      if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-      if (typeof (data.value[i]['data'][selectedField.value]) != "number") {
-        new_data.push({ x: Date.parse(data.value[i]['Date']), y: parseFloat(data.value[i]['data'][selectedField.value]) });
-      }
-      else {
-        new_data.push({ x: Date.parse(data.value[i]['Date']), y: data.value[i]['data'][selectedField.value] });
-      }
-    }
-    new_data.sort((a, b) => {
-      if (a.x < b.x) {
-        return -1;
-      }
-      if (b.x < a.x) {
-        return 1;
-      }
-      return 0;
-    });
-    chartDatasets.value = [new_data];
-  }
-  else {
-    chartDatasets.value = [];
-  }
+  // if (data.value != null && selectedSerial.value != null && selectedField.value != null) {
+  //   let startDate = Date.parse(startDateTime.value.d_value);
+  //   let endDate = Date.parse(endDateTime.value.d_value);
+  //   let new_data = [];
+  //   minXVal.value = startDate;
+  //   maxXVal.value = endDate;
+  //   for (let i in Object.keys(data.value)) {
+  //     if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
+  //     if (typeof (data.value[i]['data'][selectedField.value]) != "number") {
+  //       new_data.push({ x: Date.parse(data.value[i]['Date']), y: parseFloat(data.value[i]['data'][selectedField.value]) });
+  //     }
+  //     else {
+  //       new_data.push({ x: Date.parse(data.value[i]['Date']), y: data.value[i]['data'][selectedField.value] });
+  //     }
+  //   }
+  //   new_data.sort((a, b) => {
+  //     if (a.x < b.x) {
+  //       return -1;
+  //     }
+  //     if (b.x < a.x) {
+  //       return 1;
+  //     }
+  //     return 0;
+  //   });
+  //   chartDatasets.value = [new_data];
+  // }
+  // else {
+  //   chartDatasets.value = [];
+  // }
 
+  // let result = {
+  //   datasets: [
+
+  //   ],
+  // };
+  // for (let i in chartDatasets.value) {
+  //   if (selectedField.value == null || chartDatasets.value == null) break;
+  //   result.datasets.push({
+  //     type: 'scatter',
+  //     showLine: true,
+  //     label: selectedField.value.toString(),
+  //     data: chartDatasets.value[i],
+  //     tension: 0.2,
+  //   });
+  // }
+  // return result;
   let result = {
     datasets: [
 
     ],
   };
-  for (let i in chartDatasets.value) {
-    if (selectedField.value == null || chartDatasets.value == null) break;
+
+  for (let i = 0; i < associatedDatasets.value.length; i++) {
     result.datasets.push({
       type: 'scatter',
       showLine: true,
-      label: selectedField.value.toString(),
-      data: chartDatasets.value[i],
+      label: `teto${i}`,
+      data: associatedDatasets.value[i].data,
       tension: 0.2,
     });
   }
+
   return result;
 }
 const setChartOptions = () => {
@@ -378,7 +462,7 @@ const setChartOptions = () => {
         // max: maxXVal.value,
         ticks: {
           // stepSize: 100000 / 2,
-          precision: 5,
+          // precision: 5,
           autoSkip: true,
           minRotation: 45,
           color: textColorSecondary,
@@ -391,9 +475,10 @@ const setChartOptions = () => {
         }
       },
       y: {
-        min: 0,
-        max: 50,
+        // min: 0,
+        // max: 50,
         ticks: {
+          precision: 2,
           color: textColorSecondary
         },
         grid: {

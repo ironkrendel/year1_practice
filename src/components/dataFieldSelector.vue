@@ -15,10 +15,12 @@ const selectedSerial = ref(null);
 const dataFields = ref(null);
 const selectedField = ref(null);
 
+const dataset = ref(null);
+
 const serialSelectorRef = useTemplateRef<HTMLElement | null>('serialSelector');
 
-const props = defineProps(['data', 'id']);
-const emits = defineEmits(['update:output', 'delete']);
+const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime']);
+const emits = defineEmits(['updateOutput', 'deleteEmit']);
 
 const outputRef = toRef(props.output);
 
@@ -59,6 +61,7 @@ function updateDataSerials(e) {
             serial: tmp_serials[i],
         });
     }
+    emitNewData();
 }
 
 function updateDataFields(e) {
@@ -81,18 +84,50 @@ function updateDataFields(e) {
             field: tmp_fields[i],
         });
     }
+    emitNewData();
 }
 
 function updateData(e) {
     selectedField.value = e.field;
-    emits('update:output', {
+    emitNewData();
+}
+
+function emitNewData() {
+    if (selectedUName.value == null || selectedSerial.value == null || selectedField.value == null) {
+        return;
+    }
+    let startDate = Date.parse(props.startDateTime.toISOString());
+    let endDate = Date.parse(props.endDateTime.toISOString());
+    let new_data = [];
+    let minXVal = startDate;
+    let maxXVal = endDate;
+    for (let i in Object.keys(props.data)) {
+      if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
+      if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
+        new_data.push({ x: Date.parse(props.data[i]['Date']), y: parseFloat(props.data[i]['data'][selectedField.value]) });
+      }
+      else {
+        new_data.push({ x: Date.parse(props.data[i]['Date']), y: props.data[i]['data'][selectedField.value] });
+      }
+    }
+    new_data.sort((a, b) => {
+      if (a.x < b.x) {
+        return -1;
+      }
+      if (b.x < a.x) {
+        return 1;
+      }
+      return 0;
+    });
+    dataset.value = new_data;
+    emits('updateOutput', {
         id: props.id,
-        data: e.field
+        data: new_data,
     });
 }
 
 function selfDestruct(e) {
-    emits('delete', {
+    emits('deleteEmit', {
         id: props.id,
     });
 }
