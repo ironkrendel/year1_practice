@@ -82,10 +82,14 @@ const items = ref([
             @update:model-value="updateData"></Select>
         </InputGroup>
         <Button v-if="selectedUName != null" icon="pi pi-times"></Button> -->
-        <dataFieldSelector :data="data" ref="testDataField"></dataFieldSelector>
+        <div ref="testRef">
+          <div v-for="i in chartDatasets" style="display: flex;flex-direction: column;">
+            <dataFieldSelector :data="data" ref="testDataField" @update:output="(e) => {console.log(e)}"></dataFieldSelector>
+          </div>
+        </div>
       </div>
-      <div v-if="chartDatasets.length > 0" class="flex justify-center m-2">
-        <Button icon="pi pi-plus"></Button>
+      <div v-if="dataNames != null && dataNames != 'loading'" class="flex justify-center m-2">
+        <Button icon="pi pi-plus" @click="chartDatasets.push('teto')"></Button>
       </div>
       <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;">
@@ -175,24 +179,24 @@ export default {
       dataNames.value = "loading";
       // let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
       // if (serverResponse.status != 200) {
-        // dataNames.value = null;
-        // return;
+      // dataNames.value = null;
+      // return;
       // }
       // let resp = await serverResponse.json();
       let resp = (await import('/data/test_data.json')).default;
       data.value = resp;
       // let tmp_names = new Set();
       // for (let i in Object.keys(resp)) {
-        // if (resp[i]['uName'] == "NONE") continue;
-        // tmp_names.add(resp[i]['uName']);
+      // if (resp[i]['uName'] == "NONE") continue;
+      // tmp_names.add(resp[i]['uName']);
       // }
       dataNames.value = [];
       // let names_arr = Array.from(tmp_names);
       // names_arr.sort();
       // for (let i in names_arr) {
-        // dataNames.value.push({
-          // name: names_arr[i],
-        // });
+      // dataNames.value.push({
+      // name: names_arr[i],
+      // });
       // }
     },
     updateMinEndDT(e) {
@@ -256,7 +260,7 @@ export default {
       selectedField.value = e.field;
       chartData.value = setChartData();
       chartOptions.value = setChartOptions();
-    }
+    },
   },
 }
 let setChartData = () => {
