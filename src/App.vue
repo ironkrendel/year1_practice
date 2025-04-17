@@ -47,25 +47,24 @@ const items = ref([
     <ScrollTop></ScrollTop>
     <div class="justify-center">
       <div class="flex justify-center m-2">
-        <div class="block w-1/5 mx-2">
-          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT"
-            @update:model-value="updateMinEndDT" showTime></DatePicker>
-          <div class="my-1.5 w-full flex justify-center">
-            <Button label="-5h" class="m-auto w-auto"></Button>
-            <Button label="-1h" class="m-auto w-auto"></Button>
-            <Button label="+1h" class="m-auto w-auto"></Button>
-            <Button label="+5h" class="m-auto w-auto"></Button>
+        <div class="block w-auto mx-2">
+          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT" @update:model-value="updateMinEndDT" showTime></DatePicker>
+          <div class="m-1.5 w-full flex justify-center">
+            <Button label="-5h" class="m-auto w-auto" @click="startDTMinus5"></Button>
+            <Button label="-1h" class="m-auto w-auto" @click="startDTMinus1"></Button>
+            <Button label="+1h" class="m-auto w-auto" @click="startDTPlus1"></Button>
+            <Button label="+5h" class="m-auto w-auto" @click="startDTPlus5"></Button>
           </div>
         </div>
-        <div class="block w-1/5 mx-2">
+        <div class="block w-auto mx-2">
           <DatePicker ref="endDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultEndDT" showTime
             :minDate="minEndDT">
           </DatePicker>
-          <div class="my-1.5 w-full flex justify-center">
-            <Button label="-5h" class="mx-1 w-auto"></Button>
-            <Button label="-1h" class="mx-1 w-auto"></Button>
-            <Button label="+1h" class="mx-1 w-auto"></Button>
-            <Button label="+5h" class="mx-1 w-auto"></Button>
+          <div class="m-1.5 w-full flex justify-center">
+            <Button label="-5h" class="m-auto w-auto" @click="endDTMinus5"></Button>
+            <Button label="-1h" class="m-auto w-auto" @click="endDTMinus1"></Button>
+            <Button label="+1h" class="m-auto w-auto" @click="endDTPlus1"></Button>
+            <Button label="+5h" class="m-auto w-auto" @click="endDTPlus5"></Button>
           </div>
         </div>
       </div>
@@ -163,6 +162,7 @@ export default {
     var currentDate = new Date();
     defaultEndDT.value = currentDate;
     defaultStartDT.value = new Date(currentDate - (1 * 60 * 60 * 1000));
+    minEndDT.value = defaultStartDT.value;
   },
   destroyed() {
     window.removeEventListener("resize", this.resizeEvent);
@@ -327,6 +327,34 @@ export default {
           return;
         }
       }
+    },
+    startDTMinus5(e) {
+      startDateTime.value.d_value = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 5);
+      this.updateMinEndDT(startDateTime.value.d_value);
+    },
+    startDTMinus1(e) {
+      startDateTime.value.d_value = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 1);
+      this.updateMinEndDT(startDateTime.value.d_value);
+    },
+    startDTPlus1(e) {
+      startDateTime.value.d_value = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+      this.updateMinEndDT(startDateTime.value.d_value);
+    },
+    startDTPlus5(e) {
+      startDateTime.value.d_value = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
+      this.updateMinEndDT(startDateTime.value.d_value);
+    },
+    endDTMinus5(e) {
+      endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 5);
+    },
+    endDTMinus1(e) {
+      endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 1);
+    },
+    endDTPlus1(e) {
+      endDateTime.value.d_value = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+    },
+    endDTPlus5(e) {
+      endDateTime.value.d_value = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
     },
     testFunc(e) {
       console.log(e);
