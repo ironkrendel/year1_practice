@@ -47,10 +47,27 @@ const items = ref([
     <ScrollTop></ScrollTop>
     <div class="justify-center">
       <div class="flex justify-center m-2">
-        <DatePicker ref="startDateTime" showSeconds class="mx-1" :modelValue="defaultStartDT"
-          @update:model-value="updateMinEndDT" showTime></DatePicker>
-        <DatePicker ref="endDateTime" showSeconds class="mx-1" :modelValue="defaultEndDT" showTime :minDate="minEndDT">
-        </DatePicker>
+        <div class="block w-1/5 mx-2">
+          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT"
+            @update:model-value="updateMinEndDT" showTime></DatePicker>
+          <div class="my-1.5 w-full flex justify-center">
+            <Button label="-5h" class="m-auto w-auto"></Button>
+            <Button label="-1h" class="m-auto w-auto"></Button>
+            <Button label="+1h" class="m-auto w-auto"></Button>
+            <Button label="+5h" class="m-auto w-auto"></Button>
+          </div>
+        </div>
+        <div class="block w-1/5 mx-2">
+          <DatePicker ref="endDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultEndDT" showTime
+            :minDate="minEndDT">
+          </DatePicker>
+          <div class="my-1.5 w-full flex justify-center">
+            <Button label="-5h" class="mx-1 w-auto"></Button>
+            <Button label="-1h" class="mx-1 w-auto"></Button>
+            <Button label="+1h" class="mx-1 w-auto"></Button>
+            <Button label="+5h" class="mx-1 w-auto"></Button>
+          </div>
+        </div>
       </div>
       <div class="flex justify-center m-2">
         <Button label="Get Data" @click="getData"></Button>
