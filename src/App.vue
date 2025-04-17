@@ -345,9 +345,15 @@ export default {
       this.updateMinEndDT(startDateTime.value.d_value);
     },
     endDTMinus5(e) {
+      if (endDateTime.value.d_value - 1000 * 60 * 60 * 5 < startDateTime.value.d_value) {
+        return;
+      }
       endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 5);
     },
     endDTMinus1(e) {
+      if (endDateTime.value.d_value - 1000 * 60 * 60 * 1 < startDateTime.value.d_value) {
+        return;
+      }
       endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 1);
     },
     endDTPlus1(e) {
