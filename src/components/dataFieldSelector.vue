@@ -4,6 +4,9 @@ import Button from "primevue/button";
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import Popover from 'primevue/popover';
+import Divider from 'primevue/divider';
+import ToggleButton from 'primevue/togglebutton';
 import { toRef } from 'vue'
 
 const dataJSON = ref(null);
@@ -131,6 +134,14 @@ function selfDestruct(e) {
         id: props.id,
     });
 }
+
+const popoverFlag = ref();
+const graphTypes = ref(['Line', 'Bar', 'Scatter']);
+const dataAveragingTypes = ref(['Raw', '5 Minutes', '30 Minutes', '1 Hour', '3 Hours', '24 Hours'])
+
+function togglePopover(e) {
+    popoverFlag.value.toggle(e);
+}
 </script>
 
 <template>
@@ -159,7 +170,16 @@ function selfDestruct(e) {
             <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
                 @update:model-value="updateData"></Select>
         </InputGroup>
-        <Button v-if="selectedField != null" icon="pi pi-times" style="width: 125px;" @click="selfDestruct"></Button>
+        <!-- <Button v-if="selectedField != null" icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button> -->
+        <Button icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button>
+        <Popover ref="popoverFlag" class="border-2! border-blue-900! my-0.5!">
+            <Select ref="graphTypeSelector" :options="graphTypes" placeholder="Graph Type" modelValue="Line"></Select>
+            <Divider></Divider>
+            <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type" modelValue="Raw"></Select>
+            <Divider></Divider>
+            <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"></ToggleButton>
+        </Popover>
+        <Button icon="pi pi-times" style="width: 125px;" @click="selfDestruct"></Button>
     </div>
 </template>
 

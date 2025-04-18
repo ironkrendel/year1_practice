@@ -329,38 +329,70 @@ export default {
       }
     },
     startDTMinus5(e) {
-      startDateTime.value.d_value = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 5);
+      let newDT = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 5);
+      startDateTime.value.d_value = newDT;
+      startDateTime.value.currentSecond = newDT.getSeconds();
+      startDateTime.value.currentMinute = newDT.getMinutes();
+      startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
     startDTMinus1(e) {
-      startDateTime.value.d_value = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 1);
+      let newDT = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 1);
+      startDateTime.value.d_value = newDT;
+      startDateTime.value.currentSecond = newDT.getSeconds();
+      startDateTime.value.currentMinute = newDT.getMinutes();
+      startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
     startDTPlus1(e) {
-      startDateTime.value.d_value = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+      let newDT = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+      startDateTime.value.d_value = newDT;
+      startDateTime.value.currentSecond = newDT.getSeconds();
+      startDateTime.value.currentMinute = newDT.getMinutes();
+      startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
     startDTPlus5(e) {
-      startDateTime.value.d_value = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
+      let newDT = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
+      startDateTime.value.d_value = newDT;
+      startDateTime.value.currentSecond = newDT.getSeconds();
+      startDateTime.value.currentMinute = newDT.getMinutes();
+      startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
     endDTMinus5(e) {
       if (endDateTime.value.d_value - 1000 * 60 * 60 * 5 < startDateTime.value.d_value) {
         return;
       }
-      endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 5);
+      let newDT = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 5);
+      endDateTime.value.d_value = newDT;
+      endDateTime.value.currentSecond = newDT.getSeconds();
+      endDateTime.value.currentMinute = newDT.getMinutes();
+      endDateTime.value.currentHour = newDT.getHours();
     },
     endDTMinus1(e) {
       if (endDateTime.value.d_value - 1000 * 60 * 60 * 1 < startDateTime.value.d_value) {
         return;
       }
-      endDateTime.value.d_value = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 1);
+      let newDT = new Date(endDateTime.value.d_value - 1000 * 60 * 60 * 1);
+      endDateTime.value.d_value = newDT;
+      endDateTime.value.currentSecond = newDT.getSeconds();
+      endDateTime.value.currentMinute = newDT.getMinutes();
+      endDateTime.value.currentHour = newDT.getHours();
     },
     endDTPlus1(e) {
-      endDateTime.value.d_value = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+      let newDT = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
+      endDateTime.value.d_value = newDT;
+      endDateTime.value.currentSecond = newDT.getSeconds();
+      endDateTime.value.currentMinute = newDT.getMinutes();
+      endDateTime.value.currentHour = newDT.getHours();
     },
     endDTPlus5(e) {
-      endDateTime.value.d_value = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
+      let newDT = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
+      endDateTime.value.d_value = newDT;
+      endDateTime.value.currentSecond = newDT.getSeconds();
+      endDateTime.value.currentMinute = newDT.getMinutes();
+      endDateTime.value.currentHour = newDT.getHours();
     },
     testFunc(e) {
       console.log(e);
