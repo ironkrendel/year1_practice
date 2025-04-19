@@ -48,7 +48,8 @@ const items = ref([
     <div class="justify-center">
       <div class="flex justify-center m-2">
         <div class="block w-auto mx-2">
-          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT" @update:model-value="updateMinEndDT" showTime></DatePicker>
+          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT"
+            @update:model-value="updateMinEndDT" showTime></DatePicker>
           <div class="m-1.5 w-full flex justify-center">
             <Button label="-5h" class="m-auto w-auto" @click="startDTMinus5"></Button>
             <Button label="-1h" class="m-auto w-auto" @click="startDTMinus1"></Button>
@@ -76,28 +77,6 @@ const items = ref([
         <ProgressSpinner></ProgressSpinner>
       </div>
       <div v-else class="flex justify-center m-2">
-        <!-- <InputGroup style="width: 15%;" class="mx-2">
-          <InputGroupAddon>
-            <i class="pi pi-database"></i>
-          </InputGroupAddon>
-          <Select ref="uNameSelector" :options="dataNames" optionLabel="name" placeholder="uName"
-            @update:model-value="updateDataSerials"></Select>
-        </InputGroup>
-        <InputGroup v-if='dataSerials != null' style="width: 15%;" class="mx-2">
-          <InputGroupAddon>
-            <i class="pi pi-database"></i>
-          </InputGroupAddon>
-          <Select ref="serialSelector" :options="dataSerials" optionLabel="serial" placeholder="Serial"
-            @update:model-value="updateDataFields"></Select>
-        </InputGroup>
-        <InputGroup v-if='dataFields != null' style="width: 15%;" class="mx-2">
-          <InputGroupAddon>
-            <i class="pi pi-database"></i>
-          </InputGroupAddon>
-          <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
-            @update:model-value="updateData"></Select>
-        </InputGroup>
-        <Button v-if="selectedUName != null" icon="pi pi-times"></Button> -->
         <div ref="fieldSelectorsContainer">
           <!-- <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
             <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector>
@@ -311,10 +290,12 @@ export default {
       }
     },
     registerDataset(e) {
+      console.log(e);
       for (let i = 0; i < associatedDatasets.value.length; i++) {
         if (associatedDatasets.value[i].id == e.id) {
           associatedDatasets.value[i].data = e.data;
           associatedDatasets.value[i].label = e.label;
+          associatedDatasets.value[i].settings = e.settings;
           return;
         }
       }
@@ -400,52 +381,6 @@ export default {
   },
 }
 let setChartData = () => {
-  // if (data.value != null && selectedSerial.value != null && selectedField.value != null) {
-  //   let startDate = Date.parse(startDateTime.value.d_value);
-  //   let endDate = Date.parse(endDateTime.value.d_value);
-  //   let new_data = [];
-  //   minXVal.value = startDate;
-  //   maxXVal.value = endDate;
-  //   for (let i in Object.keys(data.value)) {
-  //     if (data.value[i]['uName'] != selectedUName.value || data.value[i]['serial'] != selectedSerial.value) continue;
-  //     if (typeof (data.value[i]['data'][selectedField.value]) != "number") {
-  //       new_data.push({ x: Date.parse(data.value[i]['Date']), y: parseFloat(data.value[i]['data'][selectedField.value]) });
-  //     }
-  //     else {
-  //       new_data.push({ x: Date.parse(data.value[i]['Date']), y: data.value[i]['data'][selectedField.value] });
-  //     }
-  //   }
-  //   new_data.sort((a, b) => {
-  //     if (a.x < b.x) {
-  //       return -1;
-  //     }
-  //     if (b.x < a.x) {
-  //       return 1;
-  //     }
-  //     return 0;
-  //   });
-  //   chartDatasets.value = [new_data];
-  // }
-  // else {
-  //   chartDatasets.value = [];
-  // }
-
-  // let result = {
-  //   datasets: [
-
-  //   ],
-  // };
-  // for (let i in chartDatasets.value) {
-  //   if (selectedField.value == null || chartDatasets.value == null) break;
-  //   result.datasets.push({
-  //     type: 'scatter',
-  //     showLine: true,
-  //     label: selectedField.value.toString(),
-  //     data: chartDatasets.value[i],
-  //     tension: 0.2,
-  //   });
-  // }
-  // return result;
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);
   minXVal.value = startDate;
@@ -458,13 +393,37 @@ let setChartData = () => {
   };
 
   for (let i = 0; i < associatedDatasets.value.length; i++) {
-    result.datasets.push({
-      type: 'scatter',
-      showLine: true,
-      label: associatedDatasets.value[i].label,
-      data: associatedDatasets.value[i].data,
-      tension: 0.2,
-    });
+    if (associatedDatasets.value[i].settings.type == 'Line') {
+      result.datasets.push({
+        type: 'scatter',
+        pointRadius: 1,
+        showLine: true,
+        label: associatedDatasets.value[i].label,
+        data: associatedDatasets.value[i].data,
+        tension: 0.2,
+      });
+    }
+    else if (associatedDatasets.value[i].settings.type == 'Bar') {
+      result.datasets.push({
+        type: 'bar',
+        barPercentage: 0.5,
+        barThickness: 6,
+        maxBarThickness: 8,
+        minBarLength: 2,
+        label: associatedDatasets.value[i].label,
+        data: associatedDatasets.value[i].data,
+        tension: 0.2,
+      });
+    }
+    else if (associatedDatasets.value[i].settings.type == 'Scatter') {
+      result.datasets.push({
+        type: 'scatter',
+        showLine: false,
+        label: associatedDatasets.value[i].label,
+        data: associatedDatasets.value[i].data,
+        tension: 0.2,
+      });
+    }
   }
 
   return result;

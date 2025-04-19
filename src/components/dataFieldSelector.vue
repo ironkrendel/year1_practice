@@ -126,6 +126,7 @@ function emitNewData() {
         id: props.id,
         data: new_data,
         label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
+        settings: graphSettings.value,
     });
 }
 
@@ -139,8 +140,29 @@ const popoverFlag = ref();
 const graphTypes = ref(['Line', 'Bar', 'Scatter']);
 const dataAveragingTypes = ref(['Raw', '5 Minutes', '30 Minutes', '1 Hour', '3 Hours', '24 Hours'])
 
+const graphSettings = ref({
+    type: 'Line',
+    averaging: 'Raw',
+    minMaxToggle: false,
+});
+
 function togglePopover(e) {
     popoverFlag.value.toggle(e);
+}
+
+function updateGraphType(e) {
+    graphSettings.value.type = e;
+    emitNewData();
+}
+
+function updateDataAveraging(e) {
+    graphSettings.value.averaging = e;
+    emitNewData();
+}
+
+function updateMinMaxToggle(e) {
+    graphSettings.value.minMaxToggle = e;
+    emitNewData();
 }
 </script>
 
@@ -173,100 +195,12 @@ function togglePopover(e) {
         <!-- <Button v-if="selectedField != null" icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button> -->
         <Button icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button>
         <Popover ref="popoverFlag" class="border-2! border-blue-900! my-0.5!">
-            <Select ref="graphTypeSelector" :options="graphTypes" placeholder="Graph Type" modelValue="Line"></Select>
+            <Select ref="graphTypeSelector" :options="graphTypes" placeholder="Graph Type" :modelValue="graphSettings.type" @update:model-value="updateGraphType"></Select>
             <Divider></Divider>
-            <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type" modelValue="Raw"></Select>
+            <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type" :modelValue="graphSettings.averaging" @update:model-value="updateDataAveraging"></Select>
             <Divider></Divider>
-            <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"></ToggleButton>
+            <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values" :modelValue="graphSettings.minMaxToggle" @update:model-value="updateMinMaxToggle"></ToggleButton>
         </Popover>
         <Button icon="pi pi-times" style="width: 125px;" @click="selfDestruct"></Button>
     </div>
 </template>
-
-<script lang="ts">
-// import { ref } from "vue";
-// import { Vue, setup } from 'vue-class-component';
-// import Button from "primevue/button";
-// import InputGroup from 'primevue/inputgroup';
-// import InputGroupAddon from 'primevue/inputgroupaddon';
-// import Select from 'primevue/select';
-
-// const data = ref(null);
-// const dataNames = ref(null);
-// const selectedUName = ref(null);
-// const dataSerials = ref(null);
-// const selectedSerial = ref(null);
-// const dataFields = ref(null);
-// const selectedField = ref(null);
-
-// export default {
-//     props: ['data', 'output'],
-//     emits: ['update:output'],
-//     mounted() {
-//         dataJSON.value = this.data;
-//         let tmp_names = new Set();
-//         for (let i in Object.keys(this.data)) {
-//             if (this.data[i]['uName'] == "NULL") continue;
-//             tmp_names.add(this.data[i]['uName']);
-//         }
-//         dataNames.value = [];
-//         let names_arr = Array.from(tmp_names);
-//         names_arr.sort();
-//         for (let i in names_arr) {
-//             dataNames.value.push({
-//                 name: names_arr[i],
-//             });
-//         }
-//     },
-//     methods: {
-//         updateDataSerials(e) {
-//             selectedUName.value = e.name;
-//             selectedSerial.value = null;
-//             selectedField.value = null;
-//             dataSerials.value = null;
-//             dataFields.value = null;
-//             if (this.$refs.serialSelector != null) {
-//                 this.$refs.serialSelector.d_value = null;
-//             }
-//             let tmp_serials = new Set();
-//             for (let i in Object.keys(dataJSON.value)) {
-//                 if (dataJSON.value[i]['uName'] != e.name) continue;
-//                 tmp_serials.add(dataJSON.value[i]['serial']);
-//             }
-//             tmp_serials = Array.from(tmp_serials);
-//             tmp_serials.sort();
-//             dataSerials.value = [];
-//             for (let i in tmp_serials) {
-//                 dataSerials.value.push({
-//                     serial: tmp_serials[i],
-//                 });
-//             }
-//         },
-//         updateDataFields(e) {
-//             selectedSerial.value = e.serial;
-//             let tmp_fields = new Set();
-//             for (let i in Object.keys(dataJSON.value)) {
-//                 if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
-//                 for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
-//                     if (typeof (dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]))) {
-//                         continue;
-//                     }
-//                     tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
-//                 }
-//             }
-//             tmp_fields = Array.from(tmp_fields);
-//             tmp_fields.sort();
-//             dataFields.value = [];
-//             for (let i in tmp_fields) {
-//                 dataFields.value.push({
-//                     field: tmp_fields[i],
-//                 });
-//             }
-//         },
-//         updateData(e) {
-//             selectedField.value = e.field;
-//             this.$emit('update:output', "teto");
-//         },
-//     }
-// }
-</script>
