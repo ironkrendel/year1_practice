@@ -14,6 +14,8 @@ import ProgressSpinner from 'primevue/progressspinner';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 import dataFieldSelector from "./components/dataFieldSelector.vue";
 
 if (localStorage.getItem('dark-mode') == "true") {
@@ -89,6 +91,11 @@ const items = ref([
       <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;">
       </Chart>
+      <DataTable style="width:70%;margin: auto;" :value="minMaxData">
+        <Column field="title" header="Field"></Column>
+        <Column field="min" header="Min"></Column>
+        <Column field="max" header="Max"></Column>
+      </DataTable>
     </div>
     <div id="Top" style="position: absolute;top: 0px;"></div>
     <!-- <h1 id="Pearto" style="font-size: 150px;margin-top: 5000px;">Pearto</h1> -->
@@ -101,6 +108,7 @@ import PrimeVue from "primevue/config";
 import ThemePreset from './components/themePreset.vue';
 import Ripple from "primevue/ripple";
 import { fileURLToPath } from "url";
+import { color } from "chart.js/helpers";
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -117,6 +125,7 @@ const selectedField = ref(null);
 
 const chartDatasets = ref([]);
 const chartData = ref({});
+const minMaxData = ref([]);
 
 const fieldSelectorsContainer = ref(null);
 const fieldSelectors = ref([]);
@@ -290,12 +299,9 @@ export default {
       }
     },
     registerDataset(e) {
-      console.log(e);
       for (let i = 0; i < associatedDatasets.value.length; i++) {
         if (associatedDatasets.value[i].id == e.id) {
-          associatedDatasets.value[i].data = e.data;
-          associatedDatasets.value[i].label = e.label;
-          associatedDatasets.value[i].settings = e.settings;
+          associatedDatasets.value[i] = e;
           return;
         }
       }
@@ -392,6 +398,17 @@ let setChartData = () => {
     ],
   };
 
+  minMaxData.value = [];
+  for (let i = 0;i < associatedDatasets.value.length;i++) {
+    if (associatedDatasets.value[i].showMinMax) {
+      minMaxData.value.push({
+        title: associatedDatasets.value[i].label,
+        min: associatedDatasets.value[i].min,
+        max: associatedDatasets.value[i].max,
+      });
+    }
+  }
+
   for (let i = 0; i < associatedDatasets.value.length; i++) {
     if (associatedDatasets.value[i].settings.type == 'Line') {
       result.datasets.push({
@@ -404,6 +421,14 @@ let setChartData = () => {
       });
     }
     else if (associatedDatasets.value[i].settings.type == 'Bar') {
+      result.datasets.push({
+        type: 'scatter',
+        pointRadius: 0,
+        showLine: false,
+        label: "IGNORE",
+        data: associatedDatasets.value[i].data,
+        hidden: true,
+      });
       result.datasets.push({
         type: 'bar',
         barPercentage: 0.5,
@@ -437,10 +462,15 @@ const setChartOptions = () => {
   let result = {
     maintainAspectRatio: false,
     // aspectRatio: 0.6,
+    interaction: {
+      intersect: false,
+      mode: 'x',
+    },
     plugins: {
       legend: {
         labels: {
-          color: textColor
+          color: textColor,
+          filter: item => item.text !== 'IGNORE'
         }
       },
       tooltip: {
@@ -470,7 +500,7 @@ const setChartOptions = () => {
         ticks: {
           // stepSize: 100000 / 2,
           // precision: 5,
-          autoSkip: true,
+          autoSkip: false,
           minRotation: 45,
           color: textColorSecondary,
           callback: function (value, index, ticks) {

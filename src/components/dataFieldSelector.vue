@@ -121,10 +121,15 @@ function emitNewData() {
       }
       return 0;
     });
+    const min = (arr, key) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
+    const max = (arr, key) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
     dataset.value = new_data;
     emits('updateOutput', {
         id: props.id,
         data: new_data,
+        min: min(new_data, 'y').y,
+        max: max(new_data, 'y').y,
+        showMinMax: graphSettings.value.minMaxToggle,
         label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
         settings: graphSettings.value,
     });
