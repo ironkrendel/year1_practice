@@ -226,7 +226,7 @@ export default {
         let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
         if (serverResponse.status != 200) {
           dataNames.value = null;
-          toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}.`, life: 5000 });
+          toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}. You may toggle test data using settings.`, life: 5000 });
           return;
         }
         resp = await serverResponse.json();
