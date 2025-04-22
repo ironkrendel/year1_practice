@@ -30,6 +30,8 @@ const graphSettings = ref({
     type: 'Line',
     averaging: 'Raw',
     minMaxToggle: false,
+    effectiveTempField: '',
+    effectiveHumidityField: '',
 });
 
 dataJSON.value = props.data;
@@ -101,6 +103,8 @@ function updateDataFields(e) {
             tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
         }
     }
+    tmp_fields.add("Effective Temp");
+    tmp_fields.add("Weather Perceivense");
     tmp_fields = Array.from(tmp_fields);
     tmp_fields.sort();
     dataFields.value = [];
@@ -108,6 +112,24 @@ function updateDataFields(e) {
         dataFields.value.push({
             field: tmp_fields[i],
         });
+    }
+    if (graphSettings.value.effectiveTempField == '' || graphSettings.value.effectiveTempField == 'Effective Temp' || graphSettings.value.effectiveTempField == 'Weather Perceivense') {
+        graphSettings.value.effectiveTempField = '';
+        for (let i = 0;i < dataFields.value.length;i++) {
+            if (dataFields.value[i].field.toString().toLowerCase().includes("temp") && dataFields.value[i].field.toString() != "Effective Temp") {
+                graphSettings.value.effectiveTempField = dataFields.value[i].field;
+                break;
+            }
+        }
+    }
+    if (graphSettings.value.effectiveHumidityField == '' || graphSettings.value.effectiveTempField == 'Effective Temp' || graphSettings.value.effectiveTempField == 'Weather Perceivense') {
+        graphSettings.value.effectiveHumidityField = '';
+        for (let i = 0;i < dataFields.value.length;i++) {
+            if (dataFields.value[i].field.toString().toLowerCase().includes("humidity")) {
+                graphSettings.value.effectiveHumidityField = dataFields.value[i].field;
+                break;
+            }
+        }
     }
     emitNewData();
 }
@@ -128,11 +150,21 @@ function emitNewData() {
     let maxXVal = endDate;
     for (let i in Object.keys(props.data)) {
         if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
-        if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
-            new_data.push({ x: Date.parse(props.data[i]['Date']), y: parseFloat(props.data[i]['data'][selectedField.value]) });
+        let x_val = Date.parse(props.data[i]['Date']);
+        if (selectedField.value == "Effective Temp") {
+            let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
+            let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
+            let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+            new_data.push({ x: x_val, y: effective_temp });
+            // console.log(effective_temp);
         }
         else {
-            new_data.push({ x: Date.parse(props.data[i]['Date']), y: props.data[i]['data'][selectedField.value] });
+            if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
+                new_data.push({ x: x_val, y: parseFloat(props.data[i]['data'][selectedField.value]) });
+            }
+            else {
+                new_data.push({ x: x_val, y: props.data[i]['data'][selectedField.value] });
+            }
         }
     }
     new_data.sort((a, b) => {
@@ -202,6 +234,16 @@ function updateMinMaxToggle(e) {
     graphSettings.value.minMaxToggle = e;
     emitNewData();
 }
+
+function updateEffectiveTempField(e) {
+    graphSettings.value.effectiveTempField = e;
+    emitNewData();
+}
+
+function updateEffectiveHumidityField(e) {
+    graphSettings.value.effectiveHumidityField = e;
+    emitNewData();
+}
 </script>
 
 <template>
@@ -240,7 +282,17 @@ function updateMinMaxToggle(e) {
                 :modelValue="graphSettings.averaging" @update:model-value="updateDataAveraging"></Select>
             <Divider></Divider>
             <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"
-                :modelValue="graphSettings.minMaxToggle" @update:model-value="updateMinMaxToggle"></ToggleButton>
+                :modelValue="graphSettings.minMaxToggle && selectedField != 'Weather Perceivense'"
+                @update:model-value="updateMinMaxToggle" :disabled="selectedField == 'Weather Perceivense'">
+            </ToggleButton>
+            <Divider></Divider>
+            <Select ref="effectiveTempField" placeholder="Temp Field" :options="dataFields" optionLabel="field"
+                optionValue="field" :modelValue="graphSettings.effectiveTempField"
+                @update:model-value="updateEffectiveTempField"></Select>
+            <br>
+            <Select ref="effectiveHumidityField" placeholder="Humidity Field" :options="dataFields" optionLabel="field"
+                optionValue="field" class="my-1.5" :modelValue="graphSettings.effectiveHumidityField"
+                @update:model-value="updateEffectiveHumidityField"></Select>
         </Popover>
         <Button icon="pi pi-clone" style="width: 125px;" @click="selfClone"></Button>
         <Button icon="pi pi-times" style="width: 125px;" @click="selfDestruct" class="mx-1.5"></Button>
