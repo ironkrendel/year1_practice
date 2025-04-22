@@ -106,6 +106,11 @@ const items = ref([
         <Column field="min" header="Min"></Column>
         <Column field="max" header="Max"></Column>
       </DataTable>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
     </div>
     <div id="Top" style="position: absolute;top: 0px;"></div>
     <!-- <h1 id="Pearto" style="font-size: 150px;margin-top: 5000px;">Pearto</h1> -->
