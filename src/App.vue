@@ -36,7 +36,7 @@ const items = ref([
 <template>
 
   <body>
-    <Toast position="bottom-right"></Toast> 
+    <Toast position="bottom-right"></Toast>
     <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;" class="h-15">
       <template #item="{ item, props, hasSubmenu }">
         <a v-ripple :href="item.href" v-bind="props.action">
@@ -498,10 +498,14 @@ let getPointWeight = (x: Number, middle: Number, left: Number, right: Number): N
 let setChartData = () => {
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);
-  // minXVal.value = startDate;
-  // maxXVal.value = endDate;
-  minXVal.value = Date.parse("2025-04-05 13:00:00");
-  maxXVal.value = Date.parse("2025-04-05 14:00:00");
+  if (testDataEnable.value) {
+    minXVal.value = Date.parse("2025-04-05 13:00:00");
+    maxXVal.value = Date.parse("2025-04-05 14:00:00");
+  }
+  else {
+    minXVal.value = startDate;
+    maxXVal.value = endDate;
+  }
 
   let result = {
     datasets: [

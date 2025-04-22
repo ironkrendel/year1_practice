@@ -115,7 +115,7 @@ function updateDataFields(e) {
     }
     if (graphSettings.value.effectiveTempField == '' || graphSettings.value.effectiveTempField == 'Effective Temp' || graphSettings.value.effectiveTempField == 'Weather Perceivense') {
         graphSettings.value.effectiveTempField = '';
-        for (let i = 0;i < dataFields.value.length;i++) {
+        for (let i = 0; i < dataFields.value.length; i++) {
             if (dataFields.value[i].field.toString().toLowerCase().includes("temp") && dataFields.value[i].field.toString() != "Effective Temp") {
                 graphSettings.value.effectiveTempField = dataFields.value[i].field;
                 break;
@@ -124,7 +124,7 @@ function updateDataFields(e) {
     }
     if (graphSettings.value.effectiveHumidityField == '' || graphSettings.value.effectiveTempField == 'Effective Temp' || graphSettings.value.effectiveTempField == 'Weather Perceivense') {
         graphSettings.value.effectiveHumidityField = '';
-        for (let i = 0;i < dataFields.value.length;i++) {
+        for (let i = 0; i < dataFields.value.length; i++) {
             if (dataFields.value[i].field.toString().toLowerCase().includes("humidity")) {
                 graphSettings.value.effectiveHumidityField = dataFields.value[i].field;
                 break;
@@ -136,7 +136,12 @@ function updateDataFields(e) {
 
 function updateData(e) {
     selectedField.value = e;
-    emitNewData();
+    if (e == 'Weather Perceivense') {
+        updateDataAveraging('Raw');
+    }
+    else {
+        emitNewData();
+    }   
 }
 
 function emitNewData() {
@@ -156,7 +161,45 @@ function emitNewData() {
             let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
             let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
             new_data.push({ x: x_val, y: effective_temp });
-            // console.log(effective_temp);
+        }
+        else if (selectedField.value == "Weather Perceivense") {
+            let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
+            let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
+            let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+            let y_val = 0;
+
+            if (effective_temp > 30) {
+                y_val = 9;
+            }
+            else if (effective_temp > 24 && effective_temp <= 30) {
+                y_val = 8;
+            }
+            else if (effective_temp > 18 && effective_temp <= 24) {
+                y_val = 7;
+            }
+            else if (effective_temp > 12 && effective_temp <= 18) {
+                y_val = 6;
+            }
+            else if (effective_temp > 6 && effective_temp <= 12) {
+                y_val = 5;
+            }
+            else if (effective_temp > 0 && effective_temp <= 6) {
+                y_val = 4;
+            }
+            else if (effective_temp > -12 && effective_temp <= 0) {
+                y_val = 3;
+            }
+            else if (effective_temp > -24 && effective_temp <= -12) {
+                y_val = 2;
+            }
+            else if (effective_temp > -30 && effective_temp <= -24) {
+                y_val = 1;
+            }
+            else {
+                y_val = 0;
+            }
+
+            new_data.push({ x: x_val, y: y_val });
         }
         else {
             if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
@@ -279,7 +322,7 @@ function updateEffectiveHumidityField(e) {
                 :modelValue="graphSettings.type" @update:model-value="updateGraphType"></Select>
             <Divider></Divider>
             <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type"
-                :modelValue="graphSettings.averaging" @update:model-value="updateDataAveraging"></Select>
+                :modelValue="(selectedField != 'Weather Perceivense') ? graphSettings.averaging : 'Raw'" @update:model-value="updateDataAveraging" :disabled="selectedField == 'Weather Perceivense'"></Select>
             <Divider></Divider>
             <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"
                 :modelValue="graphSettings.minMaxToggle && selectedField != 'Weather Perceivense'"
