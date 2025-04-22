@@ -554,7 +554,9 @@ let setChartData = () => {
             weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
           }
         }
-        new_data.push({ x: steps[step_index], y: weighted_sum / weights });
+        if (weights != 0) {
+          new_data.push({ x: steps[step_index], y: weighted_sum / weights });
+        }
       }
 
       processedData = new_data;
