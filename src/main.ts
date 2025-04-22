@@ -4,6 +4,8 @@ import PrimeVue from "primevue/config";
 import "./style.css";
 import 'primeicons/primeicons.css'
 import App from "./App.vue";
+import Toast from 'primevue/toast';
+import ToastService from 'primevue/toastservice';
 import Ripple from "primevue/ripple";
 // import { definePreset } from '@primeuix/themes';
 import ThemePreset from './components/themePreset.vue';
@@ -21,6 +23,8 @@ app.use(PrimeVue, {
   },
   ripple: true,
 });
+app.use(ToastService);
+app.component('Toast', Toast);
 
 app.directive("ripple", Ripple);
 

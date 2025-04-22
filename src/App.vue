@@ -14,6 +14,7 @@ import ProgressSpinner from 'primevue/progressspinner';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import Toast from 'primevue/toast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dataFieldSelector from "./components/dataFieldSelector.vue";
@@ -33,6 +34,7 @@ const items = ref([
 <template>
 
   <body>
+    <Toast></Toast>
     <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;" class="h-15">
       <template #item="{ item, props, hasSubmenu }">
         <a v-ripple :href="item.href" v-bind="props.action">
@@ -83,6 +85,7 @@ const items = ref([
           <!-- <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
             <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector>
           </div> -->
+          <div ref="lastContainer"></div>
         </div>
       </div>
       <div v-if="dataNames != null && dataNames != 'loading'" class="flex justify-center m-2">
@@ -109,6 +112,9 @@ import ThemePreset from './components/themePreset.vue';
 import Ripple from "primevue/ripple";
 import { fileURLToPath } from "url";
 import { color } from "chart.js/helpers";
+import { useToast } from "primevue/usetoast";
+
+let toast = null;
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -128,6 +134,7 @@ const chartData = ref({});
 const minMaxData = ref([]);
 
 const fieldSelectorsContainer = ref(null);
+const lastContainer = ref(null);
 const fieldSelectors = ref([]);
 
 const associatedDatasets = ref([]);
@@ -159,6 +166,7 @@ export default {
     startDateTime = useTemplateRef('startDateTime');
     endDateTime = useTemplateRef('endDateTime');
     testDataField = useTemplateRef('testDataField');
+    toast = useToast();
     // fieldSelectorsContainer = useTemplateRef('fieldSelectorsContainer');
     // chartOptions.value.options = setChartOptions();
   },
@@ -198,6 +206,7 @@ export default {
       let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
       if (serverResponse.status != 200) {
         dataNames.value = null;
+        toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}.`, life: 5000 });
         return;
       }
       let resp = await serverResponse.json();
@@ -244,7 +253,8 @@ export default {
       // fieldSelectors.value.push(new testClass());
       // console.log(fieldSelectors.value);
       const mountPoint = document.createElement("div");
-      fieldSelectorsContainer.value.appendChild(mountPoint);
+      // fieldSelectorsContainer.value.appendChild(mountPoint);
+      fieldSelectorsContainer.value.insertBefore(mountPoint, lastContainer.value);
 
       let id = currentID++;
       const app = createApp(dataFieldSelector, {
@@ -255,6 +265,10 @@ export default {
 
         onDeleteEmit: (e) => {
           this.removeDataSelector(e);
+          chartData.value = setChartData();
+        },
+        onCloneEmit: (e) => {
+          this.cloneDataSelector(e);
           chartData.value = setChartData();
         },
         onUpdateOutput: (e) => {
@@ -288,6 +302,63 @@ export default {
           break;
         }
       }
+    },
+    cloneDataSelector(e) {
+      let orig_app = null;
+      let orig_index = null;
+      for (let i = 0; i < fieldSelectors.value.length; i++) {
+        if (fieldSelectors.value[i].id == e.id) {
+          orig_app = fieldSelectors.value[i].app;
+          orig_index = i;
+          break;
+        }
+      }
+      if (orig_app == null || orig_index == null) return;
+      let id = currentID++;
+      const mountPoint = document.createElement("div");
+      if (orig_index + 1 >= fieldSelectors.value.length) {
+        // fieldSelectorsContainer.value.insertBefore(mountPoint, lastContainer.value);
+        fieldSelectorsContainer.value.insertBefore(mountPoint, fieldSelectors.value[orig_index].mountPoint);
+      }
+      else {
+        fieldSelectorsContainer.value.insertBefore(mountPoint, fieldSelectors.value[orig_index].mountPoint);
+      }
+      const copy_app = createApp(dataFieldSelector, {
+        data: data.value,
+        id: id,
+        startDateTime: startDateTime.value.d_value,
+        endDateTime: endDateTime.value.d_value,
+        state: e.state,
+
+        onDeleteEmit: (e) => {
+          this.removeDataSelector(e);
+          chartData.value = setChartData();
+        },
+        onCloneEmit: (e) => {
+          this.cloneDataSelector(e);
+          chartData.value = setChartData();
+        },
+        onUpdateOutput: (e) => {
+          this.registerDataset(e);
+          chartData.value = setChartData();
+        },
+      });
+      copy_app.use(PrimeVue, {
+        theme: {
+          preset: ThemePreset.data()['Theme'],
+          options: {
+            prefix: "p",
+            darkModeSelector: ".dark_mode_flag",
+            cssLayer: false,
+          },
+        },
+        ripple: true,
+      });
+
+      copy_app.directive("ripple", Ripple);
+      copy_app.mount(mountPoint);
+      // fieldSelectors.value.push({ app: copy_app, mountPoint, id, });
+      fieldSelectors.value.splice(orig_index, 0, { app: copy_app, mountPoint, id, });
     },
     clearAllDataSelectors() {
       let ids = [];
@@ -386,11 +457,23 @@ export default {
     },
   },
 }
+let getPointWeight = (x: Number, middle: Number, left: Number, right: Number): Number => {
+  if (x == middle) return 1;
+  if (x < middle) {
+    return Math.max(0, (x - middle) / (middle - left) + 1);
+  }
+  if (x > middle) {
+    return Math.max(0, (x - middle) / (middle - right) + 1);
+  }
+  return 0;
+}
 let setChartData = () => {
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);
   minXVal.value = startDate;
   maxXVal.value = endDate;
+  // minXVal.value = Date.parse("2025-04-05 13:00:00");
+  // maxXVal.value = Date.parse("2025-04-05 14:00:00");
 
   let result = {
     datasets: [
@@ -399,24 +482,91 @@ let setChartData = () => {
   };
 
   minMaxData.value = [];
-  for (let i = 0;i < associatedDatasets.value.length;i++) {
-    if (associatedDatasets.value[i].showMinMax) {
+  let nameSortedDatasets = associatedDatasets.value;
+  nameSortedDatasets.sort((a, b) => {
+    if (a.label < b.label) {
+      return -1;
+    }
+    if (b.label < a.label) {
+      return 1;
+    }
+    return 0;
+  });
+  for (let i = 0; i < nameSortedDatasets.length; i++) {
+    if (nameSortedDatasets[i].showMinMax) {
       minMaxData.value.push({
-        title: associatedDatasets.value[i].label,
-        min: associatedDatasets.value[i].min,
-        max: associatedDatasets.value[i].max,
+        title: nameSortedDatasets[i].label,
+        min: nameSortedDatasets[i].min,
+        max: nameSortedDatasets[i].max,
       });
     }
   }
-
   for (let i = 0; i < associatedDatasets.value.length; i++) {
+    let processedData = [];
+    if (associatedDatasets.value[i].settings.averaging == "Raw") {
+      processedData = associatedDatasets.value[i].data;
+    }
+    else {
+      let timestep = 0;
+      let startTimePosition = minXVal.value;
+      let endTimePosition = maxXVal.value;
+      let steps = [];
+      if (associatedDatasets.value[i].settings.averaging == "5 Minutes") {
+        timestep = 5 * 60 * 1000;
+      }
+      else if (associatedDatasets.value[i].settings.averaging == "30 Minutes") {
+        timestep = 30 * 60 * 1000;
+      }
+      else if (associatedDatasets.value[i].settings.averaging == "1 Hour") {
+        timestep = 1 * 60 * 60 * 1000;
+      }
+      else if (associatedDatasets.value[i].settings.averaging == "3 Hours") {
+        timestep = 3 * 60 * 60 * 1000;
+      }
+      else if (associatedDatasets.value[i].settings.averaging == "24 Hours") {
+        timestep = 24 * 60 * 60 * 1000;
+      }
+
+      steps = [];
+      for (let k = 0; k <= Math.floor((endTimePosition - startTimePosition) / timestep); k++) {
+        steps.push(startTimePosition + timestep * k);
+      }
+      if (steps.length <= 0) continue;
+      if (steps[steps.length - 1] < endTimePosition) {
+        steps.push(endTimePosition);
+      }
+
+      let new_data = [];
+      for (let step_index = 0; step_index < steps.length; step_index++) {
+        let weighted_sum = 0;
+        let weights = 0;
+        for (let data_index = 0; data_index < associatedDatasets.value[i].data.length; data_index++) {
+          if (step_index <= 0) {
+            weighted_sum += associatedDatasets.value[i].data[data_index].y * getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - 1, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
+            weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - 1, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
+          }
+          else if (step_index >= steps.length - 1) {
+            weighted_sum += associatedDatasets.value[i].data[data_index].y * getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + 1);
+            weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + 1);
+          }
+          else {
+            weighted_sum += associatedDatasets.value[i].data[data_index].y * getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
+            weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
+          }
+        }
+        new_data.push({ x: steps[step_index], y: weighted_sum / weights });
+      }
+
+      processedData = new_data;
+    }
+
     if (associatedDatasets.value[i].settings.type == 'Line') {
       result.datasets.push({
         type: 'scatter',
-        pointRadius: 1,
+        pointRadius: 3,
         showLine: true,
         label: associatedDatasets.value[i].label,
-        data: associatedDatasets.value[i].data,
+        data: processedData,
         tension: 0.2,
       });
     }
@@ -426,7 +576,7 @@ let setChartData = () => {
         pointRadius: 0,
         showLine: false,
         label: "IGNORE",
-        data: associatedDatasets.value[i].data,
+        data: processedData,
         hidden: true,
       });
       result.datasets.push({
@@ -436,7 +586,7 @@ let setChartData = () => {
         maxBarThickness: 8,
         minBarLength: 2,
         label: associatedDatasets.value[i].label,
-        data: associatedDatasets.value[i].data,
+        data: processedData,
         tension: 0.2,
       });
     }
@@ -445,7 +595,7 @@ let setChartData = () => {
         type: 'scatter',
         showLine: false,
         label: associatedDatasets.value[i].label,
-        data: associatedDatasets.value[i].data,
+        data: processedData,
         tension: 0.2,
       });
     }

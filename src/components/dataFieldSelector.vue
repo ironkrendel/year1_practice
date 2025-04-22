@@ -19,14 +19,37 @@ const selectedField = ref(null);
 
 const dataset = ref(null);
 
+// const uNameSelectorRef = useTemplateRef<HTMLElement | null>('uNameSelector');
 const serialSelectorRef = useTemplateRef<HTMLElement | null>('serialSelector');
+const fieldSelectorRef = useTemplateRef<HTMLElement | null>('fieldSelector');
 
-const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime']);
-const emits = defineEmits(['updateOutput', 'deleteEmit']);
+const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime', 'state']);
+const emits = defineEmits(['updateOutput', 'deleteEmit', 'cloneEmit']);
+
+const graphSettings = ref({
+    type: 'Line',
+    averaging: 'Raw',
+    minMaxToggle: false,
+});
+
+dataJSON.value = props.data;
+
+if (props.state != null) {
+    dataNames.value = props.state.dataNames;
+    dataSerials.value = props.state.dataSerials;
+    dataFields.value = props.state.dataFields;
+    graphSettings.value = props.state.graphSettings;
+    selectedUName.value = (props.state.selectedUName == null) ? null : props.state.selectedUName.toString();
+    selectedSerial.value = (props.state.selectedSerial == null) ? null : props.state.selectedSerial.toString();
+    selectedField.value = (props.state.selectedField == null) ? null : props.state.selectedField.toString();
+    // updateDataSerials(props.state.selectedUName);
+    // updateDataFields(props.state.selectedSerial);
+    // updateData(props.state.selectedField);
+    emitNewData();
+}
 
 const outputRef = toRef(props.output);
 
-dataJSON.value = props.data;
 let tmp_names = new Set();
 for (let i in Object.keys(props.data)) {
     if (props.data[i]['uName'] == "NULL") continue;
@@ -42,7 +65,7 @@ for (let i in names_arr) {
 }
 
 function updateDataSerials(e) {
-    selectedUName.value = e.name;
+    selectedUName.value = e;
     selectedSerial.value = null;
     selectedField.value = null;
     dataSerials.value = null;
@@ -52,7 +75,7 @@ function updateDataSerials(e) {
     }
     let tmp_serials = new Set();
     for (let i in Object.keys(dataJSON.value)) {
-        if (dataJSON.value[i]['uName'] != e.name) continue;
+        if (dataJSON.value[i]['uName'] != selectedUName.value) continue;
         tmp_serials.add(dataJSON.value[i]['serial']);
     }
     tmp_serials = Array.from(tmp_serials);
@@ -67,7 +90,7 @@ function updateDataSerials(e) {
 }
 
 function updateDataFields(e) {
-    selectedSerial.value = e.serial;
+    selectedSerial.value = e;
     let tmp_fields = new Set();
     for (let i in Object.keys(dataJSON.value)) {
         if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
@@ -90,7 +113,7 @@ function updateDataFields(e) {
 }
 
 function updateData(e) {
-    selectedField.value = e.field;
+    selectedField.value = e;
     emitNewData();
 }
 
@@ -104,25 +127,26 @@ function emitNewData() {
     let minXVal = startDate;
     let maxXVal = endDate;
     for (let i in Object.keys(props.data)) {
-      if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
-      if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
-        new_data.push({ x: Date.parse(props.data[i]['Date']), y: parseFloat(props.data[i]['data'][selectedField.value]) });
-      }
-      else {
-        new_data.push({ x: Date.parse(props.data[i]['Date']), y: props.data[i]['data'][selectedField.value] });
-      }
+        if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
+        if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
+            new_data.push({ x: Date.parse(props.data[i]['Date']), y: parseFloat(props.data[i]['data'][selectedField.value]) });
+        }
+        else {
+            new_data.push({ x: Date.parse(props.data[i]['Date']), y: props.data[i]['data'][selectedField.value] });
+        }
     }
     new_data.sort((a, b) => {
-      if (a.x < b.x) {
-        return -1;
-      }
-      if (b.x < a.x) {
-        return 1;
-      }
-      return 0;
+        if (a.x < b.x) {
+            return -1;
+        }
+        if (b.x < a.x) {
+            return 1;
+        }
+        return 0;
     });
     const min = (arr, key) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
     const max = (arr, key) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
+    if (new_data.length <= 0) return;
     dataset.value = new_data;
     emits('updateOutput', {
         id: props.id,
@@ -141,15 +165,24 @@ function selfDestruct(e) {
     });
 }
 
+function selfClone(e) {
+    emits('cloneEmit', {
+        id: props.id,
+        state: {
+            selectedUName: (selectedUName.value == null) ? null : new String(selectedUName.value),
+            selectedSerial: (selectedSerial.value == null) ? null : new String(selectedSerial.value),
+            selectedField: (selectedField.value == null) ? null : new String(selectedField.value),
+            dataNames: (dataNames.value == null) ? null : [...dataNames.value],
+            dataSerials: (dataSerials.value == null) ? null : [...dataSerials.value],
+            dataFields: (dataFields.value == null) ? null : [...dataFields.value],
+            graphSettings: { ...graphSettings.value },
+        }
+    });
+}
+
 const popoverFlag = ref();
 const graphTypes = ref(['Line', 'Bar', 'Scatter']);
 const dataAveragingTypes = ref(['Raw', '5 Minutes', '30 Minutes', '1 Hour', '3 Hours', '24 Hours'])
-
-const graphSettings = ref({
-    type: 'Line',
-    averaging: 'Raw',
-    minMaxToggle: false,
-});
 
 function togglePopover(e) {
     popoverFlag.value.toggle(e);
@@ -179,33 +212,41 @@ function updateMinMaxToggle(e) {
                 <i class="pi pi-database"></i>
             </InputGroupAddon>
             <Select ref="uNameSelector" :options="dataNames" optionLabel="name" placeholder="uName"
-                @update:model-value="updateDataSerials"></Select>
+                @update:model-value="updateDataSerials" :modelValue="selectedUName" optionValue="name"></Select>
         </InputGroup>
         <!-- <InputGroup v-if='dataSerials != null' style="width: 15%;" class="mx-2"> -->
-        <InputGroup v-if='dataSerials != null' class="mx-2">
+        <InputGroup v-if='selectedUName != null' class="mx-2">
             <InputGroupAddon>
                 <i class="pi pi-database"></i>
             </InputGroupAddon>
             <Select ref="serialSelector" :options="dataSerials" optionLabel="serial" placeholder="Serial"
-                @update:model-value="updateDataFields" class=""></Select>
+                @update:model-value="updateDataFields" :modelValue="selectedSerial" optionValue="serial"></Select>
         </InputGroup>
         <!-- <InputGroup v-if='dataFields != null' style="width: 15%;" class="mx-2"> -->
-        <InputGroup v-if='dataFields != null' class="mx-2">
+        <InputGroup v-if='selectedSerial != null' class="mx-2">
             <InputGroupAddon>
                 <i class="pi pi-database"></i>
             </InputGroupAddon>
             <Select ref="fieldSelector" :options="dataFields" optionLabel="field" placeholder="DataField"
-                @update:model-value="updateData"></Select>
+                @update:model-value="updateData" :modelValue="selectedField" optionValue="field"></Select>
         </InputGroup>
         <!-- <Button v-if="selectedField != null" icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button> -->
         <Button icon="pi pi-cog" style="width: 125px;" class="mx-1.5" @click="togglePopover"></Button>
         <Popover ref="popoverFlag" class="border-2! border-blue-900! my-0.5!">
-            <Select ref="graphTypeSelector" :options="graphTypes" placeholder="Graph Type" :modelValue="graphSettings.type" @update:model-value="updateGraphType"></Select>
+            <Select ref="graphTypeSelector" :options="graphTypes" placeholder="Graph Type"
+                :modelValue="graphSettings.type" @update:model-value="updateGraphType"></Select>
             <Divider></Divider>
-            <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type" :modelValue="graphSettings.averaging" @update:model-value="updateDataAveraging"></Select>
+            <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type"
+                :modelValue="graphSettings.averaging" @update:model-value="updateDataAveraging"></Select>
             <Divider></Divider>
-            <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values" :modelValue="graphSettings.minMaxToggle" @update:model-value="updateMinMaxToggle"></ToggleButton>
+            <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"
+                :modelValue="graphSettings.minMaxToggle" @update:model-value="updateMinMaxToggle"></ToggleButton>
         </Popover>
-        <Button icon="pi pi-times" style="width: 125px;" @click="selfDestruct"></Button>
+        <Button icon="pi pi-clone" style="width: 125px;" @click="selfClone"></Button>
+        <Button icon="pi pi-times" style="width: 125px;" @click="selfDestruct" class="mx-1.5"></Button>
     </div>
 </template>
+
+<script lang="ts">
+
+</script>
