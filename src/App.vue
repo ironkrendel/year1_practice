@@ -14,6 +14,8 @@ import ProgressSpinner from 'primevue/progressspinner';
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
 import Select from 'primevue/select';
+import Popover from 'primevue/popover';
+import ToggleButton from 'primevue/togglebutton';
 import Toast from 'primevue/toast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -34,7 +36,7 @@ const items = ref([
 <template>
 
   <body>
-    <Toast></Toast>
+    <Toast position="bottom-right"></Toast> 
     <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;" class="h-15">
       <template #item="{ item, props, hasSubmenu }">
         <a v-ripple :href="item.href" v-bind="props.action">
@@ -43,6 +45,11 @@ const items = ref([
       </template>
       <template #end>
         <div style="display: flex;column-gap: 0.25vw;justify-content: space-between;">
+          <Button icon="pi pi-cog" @click="toggleSettingsPopover"></Button>
+          <Popover ref="settingsPopoverFlag" class="border-2! border-blue-900! my-0.5!">
+            <ToggleButton v-ripple ref="testDataToggle" offLabel="Toggle Test Data" onLabel="Toggle Test Data"
+              :modelValue="testDataEnable" @update:model-value="updateTestDataEnable"></ToggleButton>
+          </Popover>
           <DarkModeBtn @update:model-value="updateGraphStyle"></DarkModeBtn>
           <!-- <Button icon="pi pi-cog"></Button> -->
         </div>
@@ -115,6 +122,14 @@ import { color } from "chart.js/helpers";
 import { useToast } from "primevue/usetoast";
 
 let toast = null;
+
+const settingsPopoverFlag = ref();
+
+function toggleSettingsPopover(e) {
+  settingsPopoverFlag.value.toggle(e);
+}
+
+const testDataEnable = ref(false);
 
 const chartOptions = ref();
 const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
@@ -203,14 +218,19 @@ export default {
       let endMinutes = endDate.getMinutes().toString().padStart(2, "0");
       let endSeconds = endDate.getSeconds().toString().padStart(2, "0");
       dataNames.value = "loading";
-      let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
-      if (serverResponse.status != 200) {
-        dataNames.value = null;
-        toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}.`, life: 5000 });
-        return;
+      let resp = null;
+      if (testDataEnable.value) {
+        resp = (await import('/data/test_data.json')).default;
       }
-      let resp = await serverResponse.json();
-      // let resp = (await import('/data/test_data.json')).default;
+      else {
+        let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
+        if (serverResponse.status != 200) {
+          dataNames.value = null;
+          toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}.`, life: 5000 });
+          return;
+        }
+        resp = await serverResponse.json();
+      }
       data.value = resp;
       let tmp_names = new Set();
       for (let i in Object.keys(resp)) {
@@ -234,6 +254,9 @@ export default {
     },
     updateGraphStyle(e) {
       chartOptions.value = setChartOptions();
+    },
+    updateTestDataEnable(e) {
+      testDataEnable.value = e;
     },
     // updateDataSerials(e) {
     //   chartData.value = setChartData();
@@ -470,10 +493,10 @@ let getPointWeight = (x: Number, middle: Number, left: Number, right: Number): N
 let setChartData = () => {
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);
-  minXVal.value = startDate;
-  maxXVal.value = endDate;
-  // minXVal.value = Date.parse("2025-04-05 13:00:00");
-  // maxXVal.value = Date.parse("2025-04-05 14:00:00");
+  // minXVal.value = startDate;
+  // maxXVal.value = endDate;
+  minXVal.value = Date.parse("2025-04-05 13:00:00");
+  maxXVal.value = Date.parse("2025-04-05 14:00:00");
 
   let result = {
     datasets: [
