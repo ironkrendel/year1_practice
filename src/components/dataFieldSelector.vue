@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from "vue";
+import { ref } from "vue";
 import Button from "primevue/button";
 import InputGroup from 'primevue/inputgroup';
 import InputGroupAddon from 'primevue/inputgroupaddon';
@@ -8,19 +8,16 @@ import Popover from 'primevue/popover';
 import Divider from 'primevue/divider';
 import ToggleButton from 'primevue/togglebutton';
 
-const dataJSON = ref(null);
-const dataNames = ref([]);
+const dataJSON: any = ref({});
+const dataNames: any | undefined = ref(null);
 const selectedUName = ref(null);
-const dataSerials = ref(null);
+const dataSerials: any | undefined = ref(null);
 const selectedSerial = ref(null);
-const dataFields = ref(null);
+const dataFields: any | undefined = ref(null);
 const selectedField = ref(null);
 
-const dataset = ref(null);
+const dataset: any = ref(null);
 
-// const uNameSelectorRef = useTemplateRef<HTMLElement | null>('uNameSelector');
-const serialSelectorRef = useTemplateRef<HTMLElement | null>('serialSelector');
-// const fieldSelectorRef = useTemplateRef<HTMLElement | null>('fieldSelector');
 
 const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime', 'state']);
 const emits = defineEmits(['updateOutput', 'deleteEmit', 'cloneEmit']);
@@ -43,13 +40,8 @@ if (props.state != null) {
     selectedUName.value = (props.state.selectedUName == null) ? null : props.state.selectedUName.toString();
     selectedSerial.value = (props.state.selectedSerial == null) ? null : props.state.selectedSerial.toString();
     selectedField.value = (props.state.selectedField == null) ? null : props.state.selectedField.toString();
-    // updateDataSerials(props.state.selectedUName);
-    // updateDataFields(props.state.selectedSerial);
-    // updateData(props.state.selectedField);
     emitNewData();
 }
-
-// const outputRef = toRef(props.output);
 
 let tmp_names = new Set();
 for (let i in Object.keys(props.data)) {
@@ -65,16 +57,13 @@ for (let i in names_arr) {
     });
 }
 
-function updateDataSerials(e) {
+function updateDataSerials(e: any) {
     selectedUName.value = e;
     selectedSerial.value = null;
     selectedField.value = null;
     dataSerials.value = null;
     dataFields.value = null;
-    if (serialSelectorRef.value != null) {
-        serialSelectorRef.value.d_value = null;
-    }
-    let tmp_serials = new Set();
+    let tmp_serials: Set<String> | Array<String> = new Set();
     for (let i in Object.keys(dataJSON.value)) {
         if (dataJSON.value[i]['uName'] != selectedUName.value) continue;
         tmp_serials.add(dataJSON.value[i]['serial']);
@@ -90,9 +79,9 @@ function updateDataSerials(e) {
     emitNewData();
 }
 
-function updateDataFields(e) {
+function updateDataFields(e: any) {
     selectedSerial.value = e;
-    let tmp_fields = new Set();
+    let tmp_fields: Set<String> | Array<String> = new Set();
     for (let i in Object.keys(dataJSON.value)) {
         if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
         for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
@@ -133,25 +122,21 @@ function updateDataFields(e) {
     emitNewData();
 }
 
-function updateData(e) {
+function updateData(e: any) {
     selectedField.value = e;
     if (e == 'Weather Perceivense') {
         updateDataAveraging('Raw');
     }
     else {
         emitNewData();
-    }   
+    }
 }
 
 function emitNewData() {
     if (selectedUName.value == null || selectedSerial.value == null || selectedField.value == null) {
         return;
     }
-    let startDate = Date.parse(props.startDateTime.toISOString());
-    let endDate = Date.parse(props.endDateTime.toISOString());
     let new_data = [];
-    let minXVal = startDate;
-    let maxXVal = endDate;
     for (let i in Object.keys(props.data)) {
         if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
         let x_val = Date.parse(props.data[i]['Date']);
@@ -218,8 +203,8 @@ function emitNewData() {
         }
         return 0;
     });
-    const min = (arr, key) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
-    const max = (arr, key) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
+    const min = (arr: Array<any>, key: any) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
+    const max = (arr: Array<any>, key: any) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
     if (new_data.length <= 0) return;
     dataset.value = new_data;
     emits('updateOutput', {
@@ -234,13 +219,13 @@ function emitNewData() {
     });
 }
 
-function selfDestruct(e) {
+function selfDestruct() {
     emits('deleteEmit', {
         id: props.id,
     });
 }
 
-function selfClone(e) {
+function selfClone() {
     emits('cloneEmit', {
         id: props.id,
         state: {
@@ -259,31 +244,31 @@ const popoverFlag = ref();
 const graphTypes = ref(['Line', 'Bar', 'Scatter']);
 const dataAveragingTypes = ref(['Raw', '5 Minutes', '30 Minutes', '1 Hour', '3 Hours', '24 Hours'])
 
-function togglePopover(e) {
+function togglePopover(e: any) {
     popoverFlag.value.toggle(e);
 }
 
-function updateGraphType(e) {
+function updateGraphType(e: any) {
     graphSettings.value.type = e;
     emitNewData();
 }
 
-function updateDataAveraging(e) {
+function updateDataAveraging(e: any) {
     graphSettings.value.averaging = e;
     emitNewData();
 }
 
-function updateMinMaxToggle(e) {
+function updateMinMaxToggle(e: any) {
     graphSettings.value.minMaxToggle = e;
     emitNewData();
 }
 
-function updateEffectiveTempField(e) {
+function updateEffectiveTempField(e: any) {
     graphSettings.value.effectiveTempField = e;
     emitNewData();
 }
 
-function updateEffectiveHumidityField(e) {
+function updateEffectiveHumidityField(e: any) {
     graphSettings.value.effectiveHumidityField = e;
     emitNewData();
 }
@@ -322,7 +307,8 @@ function updateEffectiveHumidityField(e) {
                 :modelValue="graphSettings.type" @update:model-value="updateGraphType"></Select>
             <Divider></Divider>
             <Select ref="dataAveragingTypeSelector" :options="dataAveragingTypes" placeholder="Data Averaging Type"
-                :modelValue="(selectedField != 'Weather Perceivense') ? graphSettings.averaging : 'Raw'" @update:model-value="updateDataAveraging" :disabled="selectedField == 'Weather Perceivense'"></Select>
+                :modelValue="(selectedField != 'Weather Perceivense') ? graphSettings.averaging : 'Raw'"
+                @update:model-value="updateDataAveraging" :disabled="selectedField == 'Weather Perceivense'"></Select>
             <Divider></Divider>
             <ToggleButton v-ripple ref="showMinMaxToggle" offLabel="Show Min/Max Values" onLabel="Show Min/Max Values"
                 :modelValue="graphSettings.minMaxToggle && selectedField != 'Weather Perceivense'"
