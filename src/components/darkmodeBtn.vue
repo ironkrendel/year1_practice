@@ -19,5 +19,5 @@ function update() {
 </script>
 
 <template>
-    <Button v-ripple @click="update" :icon="model"></Button>
+    <Button @click="update" :icon="model"></Button>
 </template>

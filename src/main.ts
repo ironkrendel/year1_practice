@@ -1,13 +1,11 @@
 import { createApp } from "vue";
 import PrimeVue from "primevue/config";
-// import Aura from "@primeuix/themes/aura";
 import "./style.css";
 import 'primeicons/primeicons.css'
 import App from "./App.vue";
 import Toast from 'primevue/toast';
 import ToastService from 'primevue/toastservice';
 import Ripple from "primevue/ripple";
-// import { definePreset } from '@primeuix/themes';
 import ThemePreset from './components/themePreset.vue';
 
 const app = createApp(App);

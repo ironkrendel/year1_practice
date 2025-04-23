@@ -32,7 +32,7 @@ const items = ref([
   <body>
     <Toast position="bottom-right"></Toast>
     <Menubar :model="items" style="position: sticky;top: 0px;z-index: 100;width: 100%;" class="h-15">
-      <template #item="{ item, props, hasSubmenu }">
+      <template #item="{ item, props }">
         <a v-ripple :href="item.href" v-bind="props.action">
           <span>{{ item.label }}</span>
         </a>
@@ -112,55 +112,48 @@ const items = ref([
 </template>
 
 <script lang="ts">
-import { useTemplateRef, defineComponent, createApp } from 'vue';
+import { useTemplateRef, createApp } from 'vue';
 import PrimeVue from "primevue/config";
 import ThemePreset from './components/themePreset.vue';
 import Ripple from "primevue/ripple";
-import { fileURLToPath } from "url";
-import { color } from "chart.js/helpers";
 import { useToast } from "primevue/usetoast";
 
-let toast = null;
+let toast: any = null;
 
 const settingsPopoverFlag = ref();
 
-function toggleSettingsPopover(e) {
+function toggleSettingsPopover(e: any) {
   settingsPopoverFlag.value.toggle(e);
 }
 
-const testDataEnable = ref(false);
+const testDataEnable: any = ref(false);
 
-const chartOptions = ref();
-const defaultStartDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
-const defaultEndDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
-const minEndDT = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+const chartOptions: any = ref();
+const defaultStartDT: any = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+const defaultEndDT: any = ref(new Date(Date.parse("04/01/2025 00:00:00")));
+const minEndDT: any = ref(new Date(Date.parse("04/01/2025 00:00:00")));
 
-const data = ref(null);
-const dataNames = ref(null);
-const selectedUName = ref(null);
-const dataSerials = ref(null);
-const selectedSerial = ref(null);
-const dataFields = ref(null);
-const selectedField = ref(null);
+const data: any = ref(null);
+const dataNames: Array<String> | any = ref(null);
+const dataSerials: Array<String> | any = ref(null);
+const dataFields: Array<String> | any = ref(null);
 
-const chartDatasets = ref([]);
-const chartData = ref({});
-const minMaxData = ref([]);
+const chartData: any= ref({});
+const minMaxData: any = ref([]);
 
-const fieldSelectorsContainer = ref(null);
-const lastContainer = ref(null);
-const fieldSelectors = ref([]);
+const fieldSelectorsContainer: any = ref(null);
+const lastContainer: any = ref(null);
+const fieldSelectors: any = ref([]);
 
-const associatedDatasets = ref([]);
+const associatedDatasets: any = ref([]);
 
-const minXVal = ref(0);
-const maxXVal = ref(1);
+const minXVal: any = ref(0);
+const maxXVal: any = ref(1);
 
 // const startDateTime = useTemplateRef('startDateTime');
-let startDateTime = ref(null);
+let startDateTime: any = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
-let endDateTime = ref(null);
-let testDataField = ref(null);
+let endDateTime: any = ref(null);
 
 let currentID = 0;
 
@@ -168,7 +161,7 @@ export default {
   created() {
     chartOptions.value = setChartOptions();
     window.addEventListener("resize", this.resizeEvent);
-    var currentDate = new Date();
+    var currentDate: any = new Date();
     defaultEndDT.value = currentDate;
     defaultStartDT.value = new Date(currentDate - (1 * 60 * 60 * 1000));
     minEndDT.value = defaultStartDT.value;
@@ -179,14 +172,13 @@ export default {
   mounted() {
     startDateTime = useTemplateRef('startDateTime');
     endDateTime = useTemplateRef('endDateTime');
-    testDataField = useTemplateRef('testDataField');
     toast = useToast();
     // fieldSelectorsContainer = useTemplateRef('fieldSelectorsContainer');
     // chartOptions.value.options = setChartOptions();
   },
   methods: {
-    resizeEvent(e) {
-      this.$refs.dataGraph.reinit();
+    resizeEvent() {
+      (this.$refs.dataGraph as any).reinit();
     },
     async getData() {
       this.clearAllDataSelectors();
@@ -195,15 +187,15 @@ export default {
       chartOptions.value = setChartOptions();
       const options = {
         method: "GET",
-        mode: 'cors',
+        mode: "cors" as RequestMode,
         headers: {
           'Accept': 'application/json',
         }
       }
       dataSerials.value = null;
       dataFields.value = null;
-      let startDate = new Date(Date.parse(this.$refs.startDateTime.d_value));
-      let endDate = new Date(Date.parse(this.$refs.endDateTime.d_value));
+      let startDate = new Date(Date.parse((this.$refs.startDateTime as any).d_value));
+      let endDate = new Date(Date.parse((this.$refs.endDateTime as any).d_value));
       let startYear = startDate.getFullYear().toString().padStart(4, "0");
       let startMonth = (startDate.getMonth() + 1).toString().padStart(2, "0");
       let startDay = startDate.getDate().toString().padStart(2, "0");
@@ -219,7 +211,7 @@ export default {
       dataNames.value = "loading";
       let resp = null;
       if (testDataEnable.value) {
-        resp = (await import('/data/test_data.json')).default;
+        resp = (await import('../data/test_data.json')).default;
       }
       else {
         let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
@@ -245,16 +237,16 @@ export default {
         });
       }
     },
-    updateMinEndDT(e) {
+    updateMinEndDT(e: any) {
       minEndDT.value = e;
-      if (this.$refs.endDateTime.d_value < this.$refs.startDateTime.d_value) {
-        this.$refs.endDateTime.d_value = this.$refs.startDateTime.d_value;
+      if ((this.$refs.endDateTime as any).d_value < (this.$refs.startDateTime as any).d_value) {
+        (this.$refs.endDateTime as any).d_value = (this.$refs.startDateTime as any).d_value;
       }
     },
-    updateGraphStyle(e) {
+    updateGraphStyle() {
       chartOptions.value = setChartOptions();
     },
-    updateTestDataEnable(e) {
+    updateTestDataEnable(e: any) {
       testDataEnable.value = e;
     },
     // updateDataSerials(e) {
@@ -269,7 +261,7 @@ export default {
     //   chartData.value = setChartData();
     //   chartOptions.value = setChartOptions();
     // },
-    addDataSelector(e) {
+    addDataSelector() {
       // fieldSelectors.value.push(currentID++);
       // let testClass = defineComponent(dataFieldSelector);
       // fieldSelectors.value.push(new testClass());
@@ -284,22 +276,22 @@ export default {
         startDateTime: startDateTime.value.d_value,
         endDateTime: endDateTime.value.d_value,
 
-        onDeleteEmit: (e) => {
+        onDeleteEmit: (e: any) => {
           this.removeDataSelector(e);
           chartData.value = setChartData();
         },
-        onCloneEmit: (e) => {
+        onCloneEmit: (e: any) => {
           this.cloneDataSelector(e);
           chartData.value = setChartData();
         },
-        onUpdateOutput: (e) => {
+        onUpdateOutput: (e: any) => {
           this.registerDataset(e);
           chartData.value = setChartData();
         },
       });
       app.use(PrimeVue, {
         theme: {
-          preset: ThemePreset.data()['Theme'],
+          preset: (ThemePreset as any).data()['Theme'],
           options: {
             prefix: "p",
             darkModeSelector: ".dark_mode_flag",
@@ -313,7 +305,7 @@ export default {
       app.mount(mountPoint);
       fieldSelectors.value.push({ app, mountPoint, id, });
     },
-    removeDataSelector(e) {
+    removeDataSelector(e: any) {
       for (let i = 0; i < fieldSelectors.value.length; i++) {
         if (fieldSelectors.value[i].id == e.id) {
           fieldSelectors.value[i].app.unmount();
@@ -324,7 +316,7 @@ export default {
         }
       }
     },
-    cloneDataSelector(e) {
+    cloneDataSelector(e: { id: any; state: any; }) {
       let orig_app = null;
       let orig_index = null;
       for (let i = 0; i < fieldSelectors.value.length; i++) {
@@ -351,22 +343,22 @@ export default {
         endDateTime: endDateTime.value.d_value,
         state: e.state,
 
-        onDeleteEmit: (e) => {
+        onDeleteEmit: (e: any) => {
           this.removeDataSelector(e);
           chartData.value = setChartData();
         },
-        onCloneEmit: (e) => {
+        onCloneEmit: (e: { id: any; state: any; }) => {
           this.cloneDataSelector(e);
           chartData.value = setChartData();
         },
-        onUpdateOutput: (e) => {
+        onUpdateOutput: (e: any) => {
           this.registerDataset(e);
           chartData.value = setChartData();
         },
       });
       copy_app.use(PrimeVue, {
         theme: {
-          preset: ThemePreset.data()['Theme'],
+          preset: (ThemePreset as any).data()['Theme'],
           options: {
             prefix: "p",
             darkModeSelector: ".dark_mode_flag",
@@ -390,7 +382,7 @@ export default {
         this.removeDataSelector({ id: ids[i] });
       }
     },
-    registerDataset(e) {
+    registerDataset(e: { id: any; }) {
       for (let i = 0; i < associatedDatasets.value.length; i++) {
         if (associatedDatasets.value[i].id == e.id) {
           associatedDatasets.value[i] = e;
@@ -399,7 +391,7 @@ export default {
       }
       associatedDatasets.value.push(e);
     },
-    deregisterDataset(e) {
+    deregisterDataset(e: { id: any; }) {
       for (let i = 0; i < associatedDatasets.value.length; i++) {
         if (associatedDatasets.value[i].id == e.id) {
           associatedDatasets.value.splice(i, 1);
@@ -407,7 +399,7 @@ export default {
         }
       }
     },
-    startDTMinus5(e) {
+    startDTMinus5() {
       let newDT = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 5);
       startDateTime.value.d_value = newDT;
       startDateTime.value.currentSecond = newDT.getSeconds();
@@ -415,7 +407,7 @@ export default {
       startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
-    startDTMinus1(e) {
+    startDTMinus1() {
       let newDT = new Date(startDateTime.value.d_value - 1000 * 60 * 60 * 1);
       startDateTime.value.d_value = newDT;
       startDateTime.value.currentSecond = newDT.getSeconds();
@@ -423,7 +415,7 @@ export default {
       startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
-    startDTPlus1(e) {
+    startDTPlus1() {
       let newDT = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
       startDateTime.value.d_value = newDT;
       startDateTime.value.currentSecond = newDT.getSeconds();
@@ -431,7 +423,7 @@ export default {
       startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
-    startDTPlus5(e) {
+    startDTPlus5() {
       let newDT = new Date(startDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
       startDateTime.value.d_value = newDT;
       startDateTime.value.currentSecond = newDT.getSeconds();
@@ -439,7 +431,7 @@ export default {
       startDateTime.value.currentHour = newDT.getHours();
       this.updateMinEndDT(startDateTime.value.d_value);
     },
-    endDTMinus5(e) {
+    endDTMinus5() {
       if (endDateTime.value.d_value - 1000 * 60 * 60 * 5 < startDateTime.value.d_value) {
         return;
       }
@@ -449,7 +441,7 @@ export default {
       endDateTime.value.currentMinute = newDT.getMinutes();
       endDateTime.value.currentHour = newDT.getHours();
     },
-    endDTMinus1(e) {
+    endDTMinus1() {
       if (endDateTime.value.d_value - 1000 * 60 * 60 * 1 < startDateTime.value.d_value) {
         return;
       }
@@ -459,14 +451,14 @@ export default {
       endDateTime.value.currentMinute = newDT.getMinutes();
       endDateTime.value.currentHour = newDT.getHours();
     },
-    endDTPlus1(e) {
+    endDTPlus1() {
       let newDT = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 1);
       endDateTime.value.d_value = newDT;
       endDateTime.value.currentSecond = newDT.getSeconds();
       endDateTime.value.currentMinute = newDT.getMinutes();
       endDateTime.value.currentHour = newDT.getHours();
     },
-    endDTPlus5(e) {
+    endDTPlus5() {
       let newDT = new Date(endDateTime.value.d_value.getTime() + 1000 * 60 * 60 * 5);
       endDateTime.value.d_value = newDT;
       endDateTime.value.currentSecond = newDT.getSeconds();
@@ -475,7 +467,7 @@ export default {
     },
   },
 }
-let getPointWeight = (x: Number, middle: Number, left: Number, right: Number): Number => {
+let getPointWeight = (x: number, middle: number, left: number, right: number): number => {
   if (x == middle) return 1;
   if (x < middle) {
     return Math.max(0, (x - middle) / (middle - left) + 1);
@@ -497,7 +489,7 @@ let setChartData = () => {
     maxXVal.value = endDate;
   }
 
-  let result = {
+  let result: any = {
     datasets: [
 
     ],
@@ -505,7 +497,7 @@ let setChartData = () => {
 
   minMaxData.value = [];
   let nameSortedDatasets = associatedDatasets.value;
-  nameSortedDatasets.sort((a, b) => {
+  nameSortedDatasets.sort((a: { label: number; }, b: { label: number; }) => {
     if (a.label < b.label) {
       return -1;
     }
@@ -648,12 +640,12 @@ const setChartOptions = () => {
       legend: {
         labels: {
           color: textColor,
-          filter: item => item.text !== 'IGNORE'
+          filter: (item: { text: string; }) => item.text !== 'IGNORE'
         }
       },
       tooltip: {
         callbacks: {
-          label: function (context) {
+          label: function (context: any) {
             let label = context.dataset.label || '';
 
             if (label) {
@@ -681,7 +673,7 @@ const setChartOptions = () => {
           autoSkip: false,
           minRotation: 45,
           color: textColorSecondary,
-          callback: function (value, index, ticks) {
+          callback: function (value: any) {
             return (new Date(value)).toLocaleString();
           }
         },
@@ -710,20 +702,20 @@ const setChartOptions = () => {
         ticks: {
           precision: 2,
           color: textColorSecondary,
-          callback: function (value, index, ticks) {
-            let names = {
-              0: 'Extreme Cold',
-              1: 'Very Cold',
-              2: 'Cold',
-              3: 'Moderate',
-              4: 'Cold',
-              5: 'Moderatly Warm',
-              6: 'Warm',
-              7: 'Hot',
-              8: 'Very Hot',
-            };
+          callback: function (value: number) {
+            let names = [
+              'Extreme Cold',
+              'Very Cold',
+              'Cold',
+              'Moderate',
+              'Cold',
+              'Moderatly Warm',
+              'Warm',
+              'Hot',
+              'Very Hot',
+          ];
             return names[value];
-          }
+          },
         },
         grid: {
           color: surfaceBorder,
