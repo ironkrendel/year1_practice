@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 import Button from "primevue/button";
-import toggleDarkMode from '/src/components/darkmodeToggle.vue';
-import getDarkModeIcon from '/src/components/darkmodeToggle.vue';
-import getDarkModeEnabled from '/src/components/darkmodeToggle.vue';
+import { toggleDarkMode } from './darkmodeToggle.vue';
+import { getDarkModeIcon } from './darkmodeToggle.vue';
+import { getDarkModeEnabled } from './darkmodeToggle.vue';
 import 'primeicons/primeicons.css'
 import { ref } from "vue";
 

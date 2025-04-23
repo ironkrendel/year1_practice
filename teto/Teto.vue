@@ -2,9 +2,8 @@
 import Button from "primevue/button";
 import Menubar from 'primevue/menubar';
 import { ref } from "vue";
-import VueCookies from 'vue-cookies';
-import { toggleDarkMode } from '/src/components/darkmodeToggle.vue';
-import DarkModeBtn from "/src/components/darkmodeBtn.vue";
+import { toggleDarkMode } from '../src/components/darkmodeToggle.vue';
+import DarkModeBtn from "../src/components/darkmodeBtn.vue";
 import ScrollTop from 'primevue/scrolltop';
 
 if (localStorage.getItem('dark-mode') == "true") {
