@@ -279,7 +279,6 @@ export default {
       // fieldSelectors.value.push(currentID++);
       // let testClass = defineComponent(dataFieldSelector);
       // fieldSelectors.value.push(new testClass());
-      // console.log(fieldSelectors.value);
       const mountPoint = document.createElement("div");
       // fieldSelectorsContainer.value.appendChild(mountPoint);
       fieldSelectorsContainer.value.insertBefore(mountPoint, lastContainer.value);
@@ -480,9 +479,6 @@ export default {
       endDateTime.value.currentMinute = newDT.getMinutes();
       endDateTime.value.currentHour = newDT.getHours();
     },
-    testFunc(e) {
-      console.log(e);
-    },
   },
 }
 let getPointWeight = (x: Number, middle: Number, left: Number, right: Number): Number => {
@@ -601,6 +597,7 @@ let setChartData = () => {
         showLine: true,
         label: associatedDatasets.value[i].label,
         data: processedData,
+        yAxisID: associatedDatasets.value[i].yAxisID,
         tension: 0.2,
       });
     }
@@ -611,6 +608,7 @@ let setChartData = () => {
         showLine: false,
         label: "IGNORE",
         data: processedData,
+        yAxisID: associatedDatasets.value[i].yAxisID,
         hidden: true,
       });
       result.datasets.push({
@@ -621,6 +619,7 @@ let setChartData = () => {
         minBarLength: 2,
         label: associatedDatasets.value[i].label,
         data: processedData,
+        yAxisID: associatedDatasets.value[i].yAxisID,
         tension: 0.2,
       });
     }
@@ -630,6 +629,7 @@ let setChartData = () => {
         showLine: false,
         label: associatedDatasets.value[i].label,
         data: processedData,
+        yAxisID: associatedDatasets.value[i].yAxisID,
         tension: 0.2,
       });
     }
@@ -698,6 +698,8 @@ const setChartOptions = () => {
       y: {
         // min: 0,
         // max: 50,
+        position: 'left',
+        id: 'y',
         ticks: {
           precision: 2,
           color: textColorSecondary
@@ -705,7 +707,35 @@ const setChartOptions = () => {
         grid: {
           color: surfaceBorder
         }
-      }
+      },
+      y1: {
+        min: 0,
+        max: 8,
+        position: 'right',
+        id: 'y1',
+        ticks: {
+          precision: 2,
+          color: textColorSecondary,
+          callback: function (value, index, ticks) {
+            let names = {
+              0: 'Extreme Cold',
+              1: 'Very Cold',
+              2: 'Cold',
+              3: 'Moderate',
+              4: 'Cold',
+              5: 'Moderatly Warm',
+              6: 'Warm',
+              7: 'Hot',
+              8: 'Very Hot',
+            };
+            return names[value];
+          }
+        },
+        grid: {
+          color: surfaceBorder,
+          drawOnChartArea: false,
+        }
+      },
     },
   };
 

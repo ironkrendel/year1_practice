@@ -7,10 +7,9 @@ import Select from 'primevue/select';
 import Popover from 'primevue/popover';
 import Divider from 'primevue/divider';
 import ToggleButton from 'primevue/togglebutton';
-import { toRef } from 'vue'
 
 const dataJSON = ref(null);
-const dataNames = ref(null);
+const dataNames = ref([]);
 const selectedUName = ref(null);
 const dataSerials = ref(null);
 const selectedSerial = ref(null);
@@ -21,7 +20,7 @@ const dataset = ref(null);
 
 // const uNameSelectorRef = useTemplateRef<HTMLElement | null>('uNameSelector');
 const serialSelectorRef = useTemplateRef<HTMLElement | null>('serialSelector');
-const fieldSelectorRef = useTemplateRef<HTMLElement | null>('fieldSelector');
+// const fieldSelectorRef = useTemplateRef<HTMLElement | null>('fieldSelector');
 
 const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime', 'state']);
 const emits = defineEmits(['updateOutput', 'deleteEmit', 'cloneEmit']);
@@ -50,7 +49,7 @@ if (props.state != null) {
     emitNewData();
 }
 
-const outputRef = toRef(props.output);
+// const outputRef = toRef(props.output);
 
 let tmp_names = new Set();
 for (let i in Object.keys(props.data)) {
@@ -169,31 +168,31 @@ function emitNewData() {
             let y_val = 0;
 
             if (effective_temp > 30) {
-                y_val = 9;
-            }
-            else if (effective_temp > 24 && effective_temp <= 30) {
                 y_val = 8;
             }
-            else if (effective_temp > 18 && effective_temp <= 24) {
+            else if (effective_temp > 24 && effective_temp <= 30) {
                 y_val = 7;
             }
-            else if (effective_temp > 12 && effective_temp <= 18) {
+            else if (effective_temp > 18 && effective_temp <= 24) {
                 y_val = 6;
             }
-            else if (effective_temp > 6 && effective_temp <= 12) {
+            else if (effective_temp > 12 && effective_temp <= 18) {
                 y_val = 5;
             }
-            else if (effective_temp > 0 && effective_temp <= 6) {
+            else if (effective_temp > 6 && effective_temp <= 12) {
                 y_val = 4;
             }
-            else if (effective_temp > -12 && effective_temp <= 0) {
+            else if (effective_temp > 0 && effective_temp <= 6) {
                 y_val = 3;
             }
-            else if (effective_temp > -24 && effective_temp <= -12) {
+            else if (effective_temp > -12 && effective_temp <= 0) {
                 y_val = 2;
             }
-            else if (effective_temp > -30 && effective_temp <= -24) {
+            else if (effective_temp > -24 && effective_temp <= -12) {
                 y_val = 1;
+            }
+            else if (effective_temp > -30 && effective_temp <= -24) {
+                y_val = 0;
             }
             else {
                 y_val = 0;
@@ -228,6 +227,7 @@ function emitNewData() {
         data: new_data,
         min: min(new_data, 'y').y,
         max: max(new_data, 'y').y,
+        yAxisID: (selectedField.value == "Weather Perceivense") ? 'y1' : 'y',
         showMinMax: graphSettings.value.minMaxToggle,
         label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
         settings: graphSettings.value,
