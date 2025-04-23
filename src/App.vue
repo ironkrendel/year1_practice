@@ -3,7 +3,7 @@ import Button from "primevue/button";
 import Menubar from 'primevue/menubar';
 import Chart from 'primevue/chart';
 import ScrollTop from 'primevue/scrolltop';
-import { ref} from "vue";
+import { ref } from "vue";
 import toggleDarkMode from '/src/components/darkmodeToggle.vue';
 import DarkModeBtn from "./components/darkmodeBtn.vue";
 import DatePicker from 'primevue/datepicker';
@@ -138,7 +138,7 @@ const dataNames: Array<String> | any = ref(null);
 const dataSerials: Array<String> | any = ref(null);
 const dataFields: Array<String> | any = ref(null);
 
-const chartData: any= ref({});
+const chartData: any = ref({});
 const minMaxData: any = ref([]);
 
 const fieldSelectorsContainer: any = ref(null);
@@ -655,7 +655,23 @@ const setChartOptions = () => {
               label += (new Date(context.parsed.x)).toLocaleString() + "; ";
             }
             if (context.parsed.y !== null) {
-              label += context.parsed.y;
+              if (context.dataset.yAxisID == "y") {
+                label += (context.parsed.y as number).toFixed(2);
+              }
+              else if (context.dataset.yAxisID == "y1") {
+                let names = [
+                  'Extreme Cold',
+                  'Very Cold',
+                  'Cold',
+                  'Moderate',
+                  'Cold',
+                  'Moderatly Warm',
+                  'Warm',
+                  'Hot',
+                  'Very Hot',
+                ];
+                label += names[context.parsed.y];
+              }
             }
             label += ")"
             return label;
@@ -713,7 +729,7 @@ const setChartOptions = () => {
               'Warm',
               'Hot',
               'Very Hot',
-          ];
+            ];
             return names[value];
           },
         },
