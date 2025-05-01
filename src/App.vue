@@ -4,7 +4,7 @@ import Menubar from 'primevue/menubar';
 import Chart from 'primevue/chart';
 import ScrollTop from 'primevue/scrolltop';
 import { ref } from "vue";
-import toggleDarkMode from '/src/components/darkmodeToggle.vue';
+import { toggleDarkMode } from './components/darkmodeToggle.vue';
 import DarkModeBtn from "./components/darkmodeBtn.vue";
 import DatePicker from 'primevue/datepicker';
 import ProgressSpinner from 'primevue/progressspinner';
