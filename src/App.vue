@@ -81,7 +81,10 @@ const items = ref([
       <div v-else-if='dataNames == "loading"' class="flex justify-center m-2">
         <ProgressSpinner></ProgressSpinner>
       </div>
-      <div v-else class="flex justify-center m-2">
+      <div v-if='dataNames == "loading"' class="flex justify-center m-2">
+        <p style="text-align: center;font-size: 40px;margin: auto;">{{ dataProcessingStatus }}</p>
+      </div>
+      <div class="flex justify-center m-2">
         <div ref="fieldSelectorsContainer">
           <!-- <div v-for="i in fieldSelectors" style="display: flex;flex-direction: column;">
             <dataFieldSelector :data="data" ref="dataFields" @update:output="testFunc" :id="i" @delete="removeDataset"></dataFieldSelector>
@@ -138,6 +141,9 @@ const dataNames: Array<String> | any = ref(null);
 const dataSerials: Array<String> | any = ref(null);
 const dataFields: Array<String> | any = ref(null);
 
+let preprocessedData: Map = new Map();
+const dataProcessingStatus: ref = ref("Processing");
+
 const chartData: any = ref({});
 const minMaxData: any = ref([]);
 
@@ -181,10 +187,9 @@ export default {
       (this.$refs.dataGraph as any).reinit();
     },
     async getData() {
-      this.clearAllDataSelectors();
-      data.value = null;
-      chartData.value = setChartData();
-      chartOptions.value = setChartOptions();
+      // create request
+      dataProcessingStatus.value = "Forming request";
+
       const options = {
         method: "GET",
         mode: "cors" as RequestMode,
@@ -194,6 +199,7 @@ export default {
       }
       dataSerials.value = null;
       dataFields.value = null;
+
       let startDate = new Date(Date.parse((this.$refs.startDateTime as any).d_value));
       let endDate = new Date(Date.parse((this.$refs.endDateTime as any).d_value));
       let startYear = startDate.getFullYear().toString().padStart(4, "0");
@@ -208,7 +214,12 @@ export default {
       let endHours = endDate.getHours().toString().padStart(2, "0");
       let endMinutes = endDate.getMinutes().toString().padStart(2, "0");
       let endSeconds = endDate.getSeconds().toString().padStart(2, "0");
+
       dataNames.value = "loading";
+      
+      // send request 
+      dataProcessingStatus.value = "Awaiting response";
+
       let resp = null;
       if (testDataEnable.value) {
         resp = (await import('../data/test_data.json')).default;
@@ -217,25 +228,32 @@ export default {
         let serverResponse = await fetch(`/api/calibr/log/${startYear}-${startMonth}-${startDay}%20${startHours}:${startMinutes}:${startSeconds}/${endYear}-${endMonth}-${endDay}%20${endHours}:${endMinutes}:${endSeconds}/`, options);
         if (serverResponse.status != 200) {
           dataNames.value = null;
-          toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}. You may toggle test data using settings.`, life: 5000 });
+          toast.add({ severity: 'error', summary: 'Request Error!', detail: `Error requesting data from the server. Server return code: ${serverResponse.status}. You may toggle test data using settings.`});
           return;
         }
         resp = await serverResponse.json();
       }
-      data.value = resp;
-      let tmp_names = new Set();
-      for (let i in Object.keys(resp)) {
-        if (resp[i]['uName'] == "NONE") continue;
-        tmp_names.add(resp[i]['uName']);
-      }
-      dataNames.value = [];
-      let names_arr = Array.from(tmp_names);
-      names_arr.sort();
-      for (let i in names_arr) {
-        dataNames.value.push({
-          name: names_arr[i],
-        });
-      }
+      
+      this.clearAllDataSelectors();
+      // data.value = resp;
+      // let tmp_names = new Set();
+      // for (let i in Object.keys(resp)) {
+      //   if (resp[i]['uName'] == "NONE") continue;
+      //   tmp_names.add(resp[i]['uName']);
+      // }
+      // dataNames.value = [];
+      // let names_arr = Array.from(tmp_names);
+      // names_arr.sort();
+      // for (let i in names_arr) {
+      //   dataNames.value.push({
+      //     name: names_arr[i],
+      //   });
+      // }
+      // chartData.value = setChartData();
+      // chartOptions.value = setChartOptions();
+
+      // preprocess data
+      preprocessResponse(resp);
     },
     updateMinEndDT(e: any) {
       minEndDT.value = e;
@@ -271,7 +289,8 @@ export default {
 
       let id = currentID++;
       const app = createApp(dataFieldSelector, {
-        data: data.value,
+        // data: data.value,
+        data: preprocessedData,
         id: id,
         startDateTime: startDateTime.value.d_value,
         endDateTime: endDateTime.value.d_value,
@@ -337,7 +356,8 @@ export default {
         fieldSelectorsContainer.value.insertBefore(mountPoint, fieldSelectors.value[orig_index].mountPoint);
       }
       const copy_app = createApp(dataFieldSelector, {
-        data: data.value,
+        // data: data.value,
+        data: preprocessedData,
         id: id,
         startDateTime: startDateTime.value.d_value,
         endDateTime: endDateTime.value.d_value,
@@ -383,13 +403,78 @@ export default {
       }
     },
     registerDataset(e: { id: any; }) {
+      const min = (arr: Array<any>, key: any) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
+      const max = (arr: Array<any>, key: any) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
+
+      let dataset_ = e.dataset;
+
+      if (e.field == "Effective Temp") {
+        for (let i = 0;i < Math.min(preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data).length, preprocessedData.get(e.name).get(e.serial).get(e.effectiveHumidityField).get(data).length);i++) {
+          let t = preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data)[i].y;
+          let h = preprocessedData.get(e.name).get(e.serial).get(e.effectiveHumidityField).get(data)[i].y;
+          let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+          dataset_.data.push({x: preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data)[i].x, y: effective_temp});
+        }
+        dataset_.min = min(dataset_.data, 'y').y;
+        dataset_.max = max(dataset_.data, 'y').y;
+      }
+      else if (e.field == "Weather Perceivense") {
+        for (let i = 0;i < Math.min(preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data).length, preprocessedData.get(e.name).get(e.serial).get(e.effectiveHumidityField).get(data).length);i++) {
+          let t = preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data)[i].y;
+          let h = preprocessedData.get(e.name).get(e.serial).get(e.effectiveHumidityField).get(data)[i].y;
+          let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+
+          let y_val = 0;
+
+          if (effective_temp > 30) {
+              y_val = 8;
+          }
+          else if (effective_temp > 24 && effective_temp <= 30) {
+              y_val = 7;
+          }
+          else if (effective_temp > 18 && effective_temp <= 24) {
+              y_val = 6;
+          }
+          else if (effective_temp > 12 && effective_temp <= 18) {
+              y_val = 5;
+          }
+          else if (effective_temp > 6 && effective_temp <= 12) {
+              y_val = 4;
+          }
+          else if (effective_temp > 0 && effective_temp <= 6) {
+              y_val = 3;
+          }
+          else if (effective_temp > -12 && effective_temp <= 0) {
+              y_val = 2;
+          }
+          else if (effective_temp > -24 && effective_temp <= -12) {
+              y_val = 1;
+          }
+          else if (effective_temp > -30 && effective_temp <= -24) {
+              y_val = 0;
+          }
+          else {
+              y_val = 0;
+          }
+          
+          dataset_.data.push({x: preprocessedData.get(e.name).get(e.serial).get(e.effectiveTempField).get(data)[i].x, y: y_val});
+        }
+        dataset_.min = 0;
+        dataset_.max = 8;
+      }
+      else {
+        dataset_.data = preprocessedData.get(e.name).get(e.serial).get(e.field).get(data);
+        dataset_.min = preprocessedData.get(e.name).get(e.serial).get(e.field).get("min");
+        dataset_.max = preprocessedData.get(e.name).get(e.serial).get(e.field).get("max");
+      }
+
       for (let i = 0; i < associatedDatasets.value.length; i++) {
-        if (associatedDatasets.value[i].id == e.id) {
-          associatedDatasets.value[i] = e;
+        if (associatedDatasets.value[i].id == e.dataset.id) {
+          associatedDatasets.value[i] = dataset_;
           return;
         }
       }
-      associatedDatasets.value.push(e);
+      associatedDatasets.value.push(dataset_);
     },
     deregisterDataset(e: { id: any; }) {
       for (let i = 0; i < associatedDatasets.value.length; i++) {
@@ -467,6 +552,7 @@ export default {
     },
   },
 }
+
 let getPointWeight = (x: number, middle: number, left: number, right: number): number => {
   if (x == middle) return 1;
   if (x < middle) {
@@ -477,6 +563,110 @@ let getPointWeight = (x: number, middle: number, left: number, right: number): n
   }
   return 0;
 }
+
+let preprocessResponse = async (resp: json) => {
+  const min = (arr: Array<any>, key: any) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
+  const max = (arr: Array<any>, key: any) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
+
+  preprocessedData = new Map();
+
+  // process names
+  dataProcessingStatus.value = "Processing names";
+
+  let names_set: Set = new Set();
+  for (let i in Object.keys(resp)) {
+    if (resp[i]['uName'] != "NONE" && resp[i]['uName'] != "TEST") {
+      names_set.add(resp[i]['uName']);
+    }
+  }
+  for (let name of names_set) {
+    preprocessedData.set(name, new Map());
+  }
+
+  // process serials
+  dataProcessingStatus.value = "Processing serials";
+
+  for (let name of names_set) {
+    let serials_set: Set = new Set();
+
+    for (let i in Object.keys(resp)) {
+      if (resp[i]['uName'] == name) {
+        serials_set.add(resp[i]['serial']);
+      }
+    }
+
+    for (let serial of serials_set) {
+      preprocessedData.get(name).set(serial, new Map());
+    }
+  }
+
+  // process fields
+  dataProcessingStatus.value = "Processing fields";
+
+  for (let name of preprocessedData.keys()) {
+    for (let serial of preprocessedData.get(name).keys()) {
+      let fields_set: Set = new Set();
+
+      for (let i in Object.keys(resp)) {
+        if (resp[i]['uName'] == name && resp[i]['serial'] == serial) {
+          for (let field in resp[i]['data']) {
+            fields_set.add(field);
+          }
+        }
+      }
+
+      for (let field of fields_set) {
+        preprocessedData.get(name).get(serial).set(field, new Map());
+
+        preprocessedData.get(name).get(serial).get(field).set(data, new Array());
+
+        for (let i in Object.keys(resp)) {
+          if (resp[i]['uName'] == name && resp[i]['serial'] == serial) {
+            if (typeof (resp[i]['data'][field]) != "number") {
+              if (parseFloat(resp[i]['data'][field]).isNaN) {
+                preprocessedData.get(name).get(serial).get(field).get(data).push({ x: Date.parse(resp[i]['Date']), y: parseFloat(resp[i]['data'][field]) });
+              }
+            }
+            else {
+              preprocessedData.get(name).get(serial).get(field).get(data).push({ x: Date.parse(resp[i]['Date']), y: resp[i]['data'][field] });
+            }
+          }
+        }
+
+        preprocessedData.get(name).get(serial).get(field).get(data).sort((a, b) => {
+          if (a.x < b.x) {
+              return -1;
+          }
+          if (b.x < a.x) {
+              return 1;
+          }
+          return 0;
+        });
+        if (preprocessedData.get(name).get(serial).get(field).get(data).length > 0) {
+          preprocessedData.get(name).get(serial).get(field).set("min", min(preprocessedData.get(name).get(serial).get(field).get(data), 'y').y);
+          preprocessedData.get(name).get(serial).get(field).set("max", max(preprocessedData.get(name).get(serial).get(field).get(data), 'y').y);
+        }
+
+        if (preprocessedData.get(name).get(serial).get(field).get(data).length == 0) {
+          preprocessedData.get(name).get(serial).delete(field);
+        }
+      }
+    }
+  }
+
+  data.value = resp;
+  dataNames.value = [];
+  let names_arr = Array.from(names_set);
+  names_arr.sort();
+  for (let i in names_arr) {
+    dataNames.value.push({
+      name: names_arr[i],
+    });
+  }
+  chartData.value = setChartData();
+  chartOptions.value = setChartOptions();
+}
+
 let setChartData = () => {
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);

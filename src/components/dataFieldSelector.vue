@@ -16,8 +16,9 @@ const selectedSerial = ref(null);
 const dataFields: any | undefined = ref(null);
 const selectedField = ref(null);
 
-const dataset: any = ref(null);
+const effectiveTempDataFields: any | undefined = ref(null);
 
+const dataset: any = ref(null);
 
 const props = defineProps(['data', 'id', 'startDateTime', 'endDateTime', 'state']);
 const emits = defineEmits(['updateOutput', 'deleteEmit', 'cloneEmit']);
@@ -33,23 +34,25 @@ const graphSettings = ref({
 dataJSON.value = props.data;
 
 if (props.state != null) {
-    dataNames.value = props.state.dataNames;
-    dataSerials.value = props.state.dataSerials;
-    dataFields.value = props.state.dataFields;
+    // dataNames.value = props.state.dataNames;
+    // dataSerials.value = props.state.dataSerials;
+    // dataFields.value = props.state.dataFields;
     graphSettings.value = props.state.graphSettings;
     selectedUName.value = (props.state.selectedUName == null) ? null : props.state.selectedUName.toString();
+    updateDataSerials(selectedUName.value);
     selectedSerial.value = (props.state.selectedSerial == null) ? null : props.state.selectedSerial.toString();
+    updateDataFields(selectedSerial.value);
     selectedField.value = (props.state.selectedField == null) ? null : props.state.selectedField.toString();
     emitNewData();
 }
 
-let tmp_names = new Set();
-for (let i in Object.keys(props.data)) {
-    if (props.data[i]['uName'] == "NULL") continue;
-    tmp_names.add(props.data[i]['uName']);
-}
+// let tmp_names = new Set();
+// for (let i in Object.keys(props.data)) {
+//     if (props.data[i]['uName'] == "NULL") continue;
+//     tmp_names.add(props.data[i]['uName']);
+// }
 dataNames.value = [];
-let names_arr = Array.from(tmp_names);
+let names_arr = Array.from(props.data.keys());
 names_arr.sort();
 for (let i in names_arr) {
     dataNames.value.push({
@@ -63,12 +66,14 @@ function updateDataSerials(e: any) {
     selectedField.value = null;
     dataSerials.value = null;
     dataFields.value = null;
-    let tmp_serials: Set<String> | Array<String> = new Set();
-    for (let i in Object.keys(dataJSON.value)) {
-        if (dataJSON.value[i]['uName'] != selectedUName.value) continue;
-        tmp_serials.add(dataJSON.value[i]['serial']);
-    }
-    tmp_serials = Array.from(tmp_serials);
+    effectiveTempDataFields.value = null;
+    // let tmp_serials: Set<String> | Array<String> = new Set();
+    // for (let i in Object.keys(dataJSON.value)) {
+    //     if (dataJSON.value[i]['uName'] != selectedUName.value) continue;
+    //     tmp_serials.add(dataJSON.value[i]['serial']);
+    // }
+    // tmp_serials = Array.from(tmp_serials);
+    let tmp_serials = Array.from(props.data.get(e).keys());
     tmp_serials.sort();
     dataSerials.value = [];
     for (let i in tmp_serials) {
@@ -81,25 +86,31 @@ function updateDataSerials(e: any) {
 
 function updateDataFields(e: any) {
     selectedSerial.value = e;
-    let tmp_fields: Set<String> | Array<String> = new Set();
-    for (let i in Object.keys(dataJSON.value)) {
-        if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
-        for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
-            if (typeof (dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]))) {
-                continue;
-            }
-            tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
-        }
-    }
-    tmp_fields.add("Effective Temp");
-    tmp_fields.add("Weather Perceivense");
-    tmp_fields = Array.from(tmp_fields);
+    // let tmp_fields: Set<String> | Array<String> = new Set();
+    // for (let i in Object.keys(dataJSON.value)) {
+    //     if (dataJSON.value[i]['uName'] != selectedUName.value || dataJSON.value[i]['serial'] != selectedSerial.value) continue;
+    //     for (let j = 0; j < Object.keys(dataJSON.value[i]['data']).length; j++) {
+    //         if (typeof (dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]) != "number" && isNaN(parseFloat(dataJSON.value[i]['data'][Object.keys(dataJSON.value[i]['data'])[j]]))) {
+    //             continue;
+    //         }
+    //         tmp_fields.add(Object.keys(dataJSON.value[i]['data'])[j]);
+    //     }
+    // }
+    let tmp_fields = Array.from(props.data.get(selectedUName.value).get(selectedSerial.value).keys());
+    tmp_fields.push("Effective Temp");
+    tmp_fields.push("Weather Perceivense");
     tmp_fields.sort();
     dataFields.value = [];
+    effectiveTempDataFields.value = [];
     for (let i in tmp_fields) {
         dataFields.value.push({
             field: tmp_fields[i],
         });
+        if (tmp_fields[i] != "Effective Temp" && tmp_fields[i] != "Weather Perceivense") {
+            effectiveTempDataFields.value.push({
+                field: tmp_fields[i],
+            })
+        }
     }
     if (graphSettings.value.effectiveTempField == '' || graphSettings.value.effectiveTempField == 'Effective Temp' || graphSettings.value.effectiveTempField == 'Weather Perceivense') {
         graphSettings.value.effectiveTempField = '';
@@ -136,86 +147,103 @@ function emitNewData() {
     if (selectedUName.value == null || selectedSerial.value == null || selectedField.value == null) {
         return;
     }
-    let new_data = [];
-    for (let i in Object.keys(props.data)) {
-        if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
-        let x_val = Date.parse(props.data[i]['Date']);
-        if (selectedField.value == "Effective Temp") {
-            let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
-            let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
-            let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
-            new_data.push({ x: x_val, y: effective_temp });
-        }
-        else if (selectedField.value == "Weather Perceivense") {
-            let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
-            let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
-            let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
-            let y_val = 0;
+    // let new_data = [];
+    // for (let i in Object.keys(props.data)) {
+    //     if (props.data[i]['uName'] != selectedUName.value || props.data[i]['serial'] != selectedSerial.value) continue;
+    //     let x_val = Date.parse(props.data[i]['Date']);
+    //     if (selectedField.value == "Effective Temp") {
+    //         let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
+    //         let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
+    //         let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+    //         new_data.push({ x: x_val, y: effective_temp });
+    //     }
+    //     else if (selectedField.value == "Weather Perceivense") {
+    //         let t = props.data[i]['data'][graphSettings.value.effectiveTempField];
+    //         let h = props.data[i]['data'][graphSettings.value.effectiveHumidityField];
+    //         let effective_temp = t - 0.4 * (t - 10) * (1 - h / 100);
+    //         let y_val = 0;
 
-            if (effective_temp > 30) {
-                y_val = 8;
-            }
-            else if (effective_temp > 24 && effective_temp <= 30) {
-                y_val = 7;
-            }
-            else if (effective_temp > 18 && effective_temp <= 24) {
-                y_val = 6;
-            }
-            else if (effective_temp > 12 && effective_temp <= 18) {
-                y_val = 5;
-            }
-            else if (effective_temp > 6 && effective_temp <= 12) {
-                y_val = 4;
-            }
-            else if (effective_temp > 0 && effective_temp <= 6) {
-                y_val = 3;
-            }
-            else if (effective_temp > -12 && effective_temp <= 0) {
-                y_val = 2;
-            }
-            else if (effective_temp > -24 && effective_temp <= -12) {
-                y_val = 1;
-            }
-            else if (effective_temp > -30 && effective_temp <= -24) {
-                y_val = 0;
-            }
-            else {
-                y_val = 0;
-            }
+    //         if (effective_temp > 30) {
+    //             y_val = 8;
+    //         }
+    //         else if (effective_temp > 24 && effective_temp <= 30) {
+    //             y_val = 7;
+    //         }
+    //         else if (effective_temp > 18 && effective_temp <= 24) {
+    //             y_val = 6;
+    //         }
+    //         else if (effective_temp > 12 && effective_temp <= 18) {
+    //             y_val = 5;
+    //         }
+    //         else if (effective_temp > 6 && effective_temp <= 12) {
+    //             y_val = 4;
+    //         }
+    //         else if (effective_temp > 0 && effective_temp <= 6) {
+    //             y_val = 3;
+    //         }
+    //         else if (effective_temp > -12 && effective_temp <= 0) {
+    //             y_val = 2;
+    //         }
+    //         else if (effective_temp > -24 && effective_temp <= -12) {
+    //             y_val = 1;
+    //         }
+    //         else if (effective_temp > -30 && effective_temp <= -24) {
+    //             y_val = 0;
+    //         }
+    //         else {
+    //             y_val = 0;
+    //         }
 
-            new_data.push({ x: x_val, y: y_val });
-        }
-        else {
-            if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
-                new_data.push({ x: x_val, y: parseFloat(props.data[i]['data'][selectedField.value]) });
-            }
-            else {
-                new_data.push({ x: x_val, y: props.data[i]['data'][selectedField.value] });
-            }
-        }
-    }
-    new_data.sort((a, b) => {
-        if (a.x < b.x) {
-            return -1;
-        }
-        if (b.x < a.x) {
-            return 1;
-        }
-        return 0;
-    });
-    const min = (arr: Array<any>, key: any) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
-    const max = (arr: Array<any>, key: any) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
-    if (new_data.length <= 0) return;
-    dataset.value = new_data;
+    //         new_data.push({ x: x_val, y: y_val });
+    //     }
+    //     else {
+    //         if (typeof (props.data[i]['data'][selectedField.value]) != "number") {
+    //             new_data.push({ x: x_val, y: parseFloat(props.data[i]['data'][selectedField.value]) });
+    //         }
+    //         else {
+    //             new_data.push({ x: x_val, y: props.data[i]['data'][selectedField.value] });
+    //         }
+    //     }
+    // }
+    // new_data.sort((a, b) => {
+    //     if (a.x < b.x) {
+    //         return -1;
+    //     }
+    //     if (b.x < a.x) {
+    //         return 1;
+    //     }
+    //     return 0;
+    // });
+    // const min = (arr: Array<any>, key: any) => arr.reduce((min, el) => el[key] < min[key] ? el : min);
+    // const max = (arr: Array<any>, key: any) => arr.reduce((max, el) => el[key] > max[key] ? el : max);
+    // if (new_data.length <= 0) return;
+    // dataset.value = new_data;
+    // emits('updateOutput', {
+    //     id: props.id,
+    //     data: new_data,
+    //     min: min(new_data, 'y').y,
+    //     max: max(new_data, 'y').y,
+    //     yAxisID: (selectedField.value == "Weather Perceivense") ? 'y1' : 'y',
+    //     showMinMax: graphSettings.value.minMaxToggle,
+    //     label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
+    //     settings: graphSettings.value,
+    // });
     emits('updateOutput', {
-        id: props.id,
-        data: new_data,
-        min: min(new_data, 'y').y,
-        max: max(new_data, 'y').y,
-        yAxisID: (selectedField.value == "Weather Perceivense") ? 'y1' : 'y',
-        showMinMax: graphSettings.value.minMaxToggle,
-        label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
-        settings: graphSettings.value,
+        name: selectedUName.value,
+        serial: selectedSerial.value,
+        field: selectedField.value,
+        effectiveTempField: graphSettings.value.effectiveTempField,
+        effectiveHumidityField: graphSettings.value.effectiveHumidityField,
+        dataset: {
+            id: props.id,
+            data: [],
+            min: 0,
+            max: 100,
+            yAxisID: (selectedField.value == "Weather Perceivense") ? 'y1' : 'y',
+            showMinMax: graphSettings.value.minMaxToggle,
+            label: `${selectedUName.value} ${selectedSerial.value} ${selectedField.value}`,
+            settings: graphSettings.value,
+        }
     });
 }
 
@@ -232,9 +260,9 @@ function selfClone() {
             selectedUName: (selectedUName.value == null) ? null : new String(selectedUName.value),
             selectedSerial: (selectedSerial.value == null) ? null : new String(selectedSerial.value),
             selectedField: (selectedField.value == null) ? null : new String(selectedField.value),
-            dataNames: (dataNames.value == null) ? null : [...dataNames.value],
-            dataSerials: (dataSerials.value == null) ? null : [...dataSerials.value],
-            dataFields: (dataFields.value == null) ? null : [...dataFields.value],
+            // dataNames: (dataNames.value == null) ? null : [...dataNames.value],
+            // dataSerials: (dataSerials.value == null) ? null : [...dataSerials.value],
+            // dataFields: (dataFields.value == null) ? null : [...dataFields.value],
             graphSettings: { ...graphSettings.value },
         }
     });
@@ -315,11 +343,11 @@ function updateEffectiveHumidityField(e: any) {
                 @update:model-value="updateMinMaxToggle" :disabled="selectedField == 'Weather Perceivense'">
             </ToggleButton>
             <Divider></Divider>
-            <Select ref="effectiveTempField" placeholder="Temp Field" :options="dataFields" optionLabel="field"
+            <Select ref="effectiveTempField" placeholder="Temp Field" :options="effectiveTempDataFields" optionLabel="field"
                 optionValue="field" :modelValue="graphSettings.effectiveTempField"
                 @update:model-value="updateEffectiveTempField"></Select>
             <br>
-            <Select ref="effectiveHumidityField" placeholder="Humidity Field" :options="dataFields" optionLabel="field"
+            <Select ref="effectiveHumidityField" placeholder="Humidity Field" :options="effectiveTempDataFields" optionLabel="field"
                 optionValue="field" class="my-1.5" :modelValue="graphSettings.effectiveHumidityField"
                 @update:model-value="updateEffectiveHumidityField"></Select>
         </Popover>
