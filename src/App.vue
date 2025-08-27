@@ -816,10 +816,11 @@ let setChartData = () => {
       }
 
       let new_data = [];
+      let start_data_index = 0;
       for (let step_index = 0; step_index < steps.length; step_index++) {
         let weighted_sum = 0;
         let weights = 0;
-        for (let data_index = 0; data_index < associatedDatasets.value[i].data.length; data_index++) {
+        for (let data_index = start_data_index; data_index < associatedDatasets.value[i].data.length; data_index++) {
           if (step_index <= 0) {
             weighted_sum += associatedDatasets.value[i].data[data_index].y * getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - 1, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
             weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - 1, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
@@ -831,6 +832,9 @@ let setChartData = () => {
           else {
             weighted_sum += associatedDatasets.value[i].data[data_index].y * getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
             weights += getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2);
+          }
+          if (getPointWeight(associatedDatasets.value[i].data[data_index].x, steps[step_index], steps[step_index] - (steps[step_index] - steps[step_index - 1]) / 2, steps[step_index] + (steps[step_index + 1] - steps[step_index]) / 2) > 0) {
+            start_data_index = data_index;
           }
         }
         if (weights != 0) {
