@@ -14,6 +14,7 @@ import Toast from 'primevue/toast';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dataFieldSelector from "./components/dataFieldSelector.vue";
+import Slider from "primevue/slider";
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -94,6 +95,11 @@ const items = ref([
       </div>
       <div v-if="dataNames != null && dataNames != 'loading'" class="flex justify-center m-2">
         <Button icon="pi pi-plus" @click="addDataSelector"></Button>
+      </div>
+      <div class="flex">
+        <p class="m-auto mr-0 text-center align-middle h-8.5" ref="startTimeLabel">-</p>
+        <Slider ref="timeSlider" class="w-60/100 m-auto mb-5 mr-5 ml-5" range :step="0.01" @update:model-value="updateTimeLimits" @slideend="onTimeLimitsRelease" :disabled="dataNames == null || dataNames == 'loading'"></Slider>
+        <p class="m-auto ml-0 text-center align-middle h-8.5" ref="endTimeLabel">-</p>
       </div>
       <Chart :data="chartData" ref="dataGraph" class="h-[30rem]" :options="chartOptions"
         style="width:70%;margin: auto;">
@@ -254,6 +260,9 @@ export default {
 
       // preprocess data
       preprocessResponse(resp);
+
+      this.updateTimeLimits([0, 100]);
+      this.$refs.timeSlider.d_value = [0, 100];
     },
     updateMinEndDT(e: any) {
       minEndDT.value = e;
@@ -266,6 +275,26 @@ export default {
     },
     updateTestDataEnable(e: any) {
       testDataEnable.value = e;
+    },
+    updateTimeLimits(e: any) {
+      let timeDiff: number = maxXVal.value - minXVal.value;
+      
+      let newStartX = minXVal.value + timeDiff * e[0] / 100;
+      let newEndX = minXVal.value + timeDiff * e[1] / 100;
+
+      let newStartDate: Date = new Date(newStartX);
+      let newEndDate: Date = new Date(newEndX);
+
+      this.$refs.startTimeLabel.innerText = newStartDate.toLocaleString().replace(",", "");
+      this.$refs.endTimeLabel.innerText = newEndDate.toLocaleString().replace(",", "");
+
+      chartOptions.value.scales.x.min = newStartX;
+      chartOptions.value.scales.x.max = newEndX;
+      // this.$refs.dataGraph.chart.update();
+    },
+    onTimeLimitsRelease(e: any) {
+      this.$refs.dataGraph.chart.update();
+      console.log(e);
     },
     // updateDataSerials(e) {
     //   chartData.value = setChartData();
@@ -813,11 +842,19 @@ let setChartData = () => {
 
   return result;
 }
-const setChartOptions = () => {
+const setChartOptions = (minX = null, maxX = null) => {
   const documentStyle = getComputedStyle(document.documentElement);
   const textColor = documentStyle.getPropertyValue('--p-text-color');
   const textColorSecondary = documentStyle.getPropertyValue('--p-text-muted-color');
   const surfaceBorder = documentStyle.getPropertyValue('--p-content-border-color');
+
+  let startX = minXVal.value;
+  let endX = maxXVal.value;
+
+  if (minX != null && maxX != null) {
+    startX = minX;
+    endX = maxX;
+  }
 
   let result = {
     maintainAspectRatio: false,
@@ -871,8 +908,8 @@ const setChartOptions = () => {
     },
     scales: {
       x: {
-        min: minXVal.value,
-        max: maxXVal.value,
+        min: startX,
+        max: endX,
         ticks: {
           // stepSize: 100000 / 2,
           // precision: 5,
