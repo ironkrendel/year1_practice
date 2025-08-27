@@ -1,0 +1,1 @@
+docker build ./ -t year1_practice
