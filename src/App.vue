@@ -15,6 +15,9 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import dataFieldSelector from "./components/dataFieldSelector.vue";
 import Slider from "primevue/slider";
+import Divider from 'primevue/divider';
+import Panel from 'primevue/panel';
+import FileUpload from "primevue/fileupload";
 
 if (localStorage.getItem('dark-mode') == "true") {
   toggleDarkMode();
@@ -52,32 +55,40 @@ const items = ref([
     </Menubar>
     <ScrollTop></ScrollTop>
     <div class="justify-center">
-      <div class="flex justify-center m-2">
-        <div class="block w-auto mx-2">
-          <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT"
-            @update:model-value="updateMinEndDT" showTime></DatePicker>
-          <div class="m-1.5 w-full flex justify-center">
-            <Button label="-5h" class="m-auto w-auto" @click="startDTMinus5"></Button>
-            <Button label="-1h" class="m-auto w-auto" @click="startDTMinus1"></Button>
-            <Button label="+1h" class="m-auto w-auto" @click="startDTPlus1"></Button>
-            <Button label="+5h" class="m-auto w-auto" @click="startDTPlus5"></Button>
+      <!-- <Panel class="m-auto w-fit border-3 border-solid border-blue-900 rounded-xl"> -->
+      <Panel ref="dataPanel" header="Load data" :collapsed="isPanelCollapsed" @update:collapsed="(e: any) => {isPanelCollapsed = e}" toggleable class="m-auto w-125 border-3! border-solid! rounded-xl!">
+        <div class="flex justify-center m-2">
+          <div class="block w-auto mx-2">
+            <DatePicker ref="startDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultStartDT"
+              @update:model-value="updateMinEndDT" showTime></DatePicker>
+            <div class="m-1.5 w-full flex justify-center">
+              <Button label="-5h" class="m-auto w-auto" @click="startDTMinus5"></Button>
+              <Button label="-1h" class="m-auto w-auto" @click="startDTMinus1"></Button>
+              <Button label="+1h" class="m-auto w-auto" @click="startDTPlus1"></Button>
+              <Button label="+5h" class="m-auto w-auto" @click="startDTPlus5"></Button>
+            </div>
+          </div>
+          <div class="block w-auto mx-2">
+            <DatePicker ref="endDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultEndDT" showTime
+              :minDate="minEndDT">
+            </DatePicker>
+            <div class="m-1.5 w-full flex justify-center">
+              <Button label="-5h" class="m-auto w-auto" @click="endDTMinus5"></Button>
+              <Button label="-1h" class="m-auto w-auto" @click="endDTMinus1"></Button>
+              <Button label="+1h" class="m-auto w-auto" @click="endDTPlus1"></Button>
+              <Button label="+5h" class="m-auto w-auto" @click="endDTPlus5"></Button>
+            </div>
           </div>
         </div>
-        <div class="block w-auto mx-2">
-          <DatePicker ref="endDateTime" showSeconds class="mx-1 w-full" :modelValue="defaultEndDT" showTime
-            :minDate="minEndDT">
-          </DatePicker>
-          <div class="m-1.5 w-full flex justify-center">
-            <Button label="-5h" class="m-auto w-auto" @click="endDTMinus5"></Button>
-            <Button label="-1h" class="m-auto w-auto" @click="endDTMinus1"></Button>
-            <Button label="+1h" class="m-auto w-auto" @click="endDTPlus1"></Button>
-            <Button label="+5h" class="m-auto w-auto" @click="endDTPlus5"></Button>
-          </div>
+        <div class="flex justify-center m-2">
+          <Button label="Get Data" @click="getData"></Button>
         </div>
-      </div>
-      <div class="flex justify-center m-2">
-        <Button label="Get Data" @click="getData"></Button>
-      </div>
+        <Divider class="ml-5! mr-5! w-auto!"></Divider>
+        <div class="flex justify-center m-2">
+          <FileUpload disabled chooseLabel="Load csv" class="mr-5 w-40" mode="basic" auto accept=".csv" @select="loadCSVFile"></FileUpload>
+          <FileUpload chooseLabel="Load JSON" class="ml-5 w-40" mode="basic" auto accept=".json" customUpload @select="loadJSONFile"></FileUpload>
+        </div>
+      </Panel>
       <p v-if="dataNames == null" style="text-align: center;font-size: 50px;margin: auto;">No data</p>
       <div v-else-if='dataNames == "loading"' class="flex justify-center m-2">
         <ProgressSpinner></ProgressSpinner>
@@ -164,6 +175,8 @@ const maxXVal: any = ref(1);
 
 let lastLimitsUpdate: number = window.performance.now();
 
+const isPanelCollapsed: any = ref(true);
+
 // const startDateTime = useTemplateRef('startDateTime');
 let startDateTime: any = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
@@ -189,6 +202,7 @@ export default {
     toast = useToast();
     // fieldSelectorsContainer = useTemplateRef('fieldSelectorsContainer');
     // chartOptions.value.options = setChartOptions();
+    isPanelCollapsed.value = false;
   },
   methods: {
     resizeEvent() {
@@ -241,30 +255,42 @@ export default {
         }
         resp = await serverResponse.json();
       }
+
+      this.processDataJSON(resp);
       
-      this.clearAllDataSelectors();
-      // data.value = resp;
-      // let tmp_names = new Set();
-      // for (let i in Object.keys(resp)) {
-      //   if (resp[i]['uName'] == "NONE") continue;
-      //   tmp_names.add(resp[i]['uName']);
-      // }
-      // dataNames.value = [];
-      // let names_arr = Array.from(tmp_names);
-      // names_arr.sort();
-      // for (let i in names_arr) {
-      //   dataNames.value.push({
-      //     name: names_arr[i],
-      //   });
-      // }
-      // chartData.value = setChartData();
-      // chartOptions.value = setChartOptions();
+      // this.clearAllDataSelectors();
 
       // preprocess data
-      preprocessResponse(resp);
+      // preprocessResponse(resp);
+
+      // this.updateTimeLimits([0, 100]);
+      // this.$refs.timeSlider.d_value = [0, 100];
+
+      // isPanelCollapsed.value = true;
+    },
+    loadCSVFile(e: any) {
+
+    },
+    loadJSONFile(e: any) {
+      const file = e.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async (load_event: any) => {
+        this.processDataJSON(JSON.parse(load_event.target.result));
+      };
+
+      reader.readAsText(file);
+    },
+    processDataJSON(data: JSON) {
+      this.clearAllDataSelectors();
+
+      preprocessResponse(data);
+      updateXBounds(data);
 
       this.updateTimeLimits([0, 100]);
       this.$refs.timeSlider.d_value = [0, 100];
+
+      isPanelCollapsed.value = true;
     },
     updateMinEndDT(e: any) {
       minEndDT.value = e;
@@ -279,6 +305,10 @@ export default {
       testDataEnable.value = e;
     },
     updateTimeLimits(e: any) {
+      if (e[1] < e[0]) {
+        this.$refs.timeSlider.d_value = [e[1], e[1]];
+        // return;
+      }
       let timeDiff: number = maxXVal.value - minXVal.value;
       
       let newStartX = minXVal.value + timeDiff * e[0] / 100;
@@ -293,7 +323,7 @@ export default {
       chartOptions.value.scales.x.min = newStartX;
       chartOptions.value.scales.x.max = newEndX;
       // this.$refs.dataGraph.chart.update();
-      if (window.performance.now() - lastLimitsUpdate >= 100) {
+      if (window.performance.now() - lastLimitsUpdate >= 10) {
         this.$refs.dataGraph.chart.update()
         lastLimitsUpdate = window.performance.now();
       }
@@ -701,6 +731,16 @@ let preprocessResponse = async (resp: json) => {
   chartOptions.value = setChartOptions();
 }
 
+let updateXBounds = (data: JSON) => {
+  let dates = [];
+  for (let i in Object.keys(data)) {
+    dates.push(Date.parse(data[i].Date));
+  }
+
+  minXVal.value = Math.min(...dates);
+  maxXVal.value = Math.max(...dates);
+}
+
 let setChartData = () => {
   let startDate = Date.parse(startDateTime.value.d_value);
   let endDate = Date.parse(endDateTime.value.d_value);
@@ -709,8 +749,9 @@ let setChartData = () => {
     maxXVal.value = Date.parse("2025-04-05 14:00:00");
   }
   else {
-    minXVal.value = startDate;
-    maxXVal.value = endDate;
+    // minXVal.value = startDate;
+    // maxXVal.value = endDate;
+    updateXBounds(data.value);
   }
 
   let result: any = {
