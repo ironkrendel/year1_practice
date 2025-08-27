@@ -162,6 +162,8 @@ const associatedDatasets: any = ref([]);
 const minXVal: any = ref(0);
 const maxXVal: any = ref(1);
 
+let lastLimitsUpdate: number = window.performance.now();
+
 // const startDateTime = useTemplateRef('startDateTime');
 let startDateTime: any = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
@@ -291,10 +293,13 @@ export default {
       chartOptions.value.scales.x.min = newStartX;
       chartOptions.value.scales.x.max = newEndX;
       // this.$refs.dataGraph.chart.update();
+      if (window.performance.now() - lastLimitsUpdate >= 100) {
+        this.$refs.dataGraph.chart.update()
+        lastLimitsUpdate = window.performance.now();
+      }
     },
     onTimeLimitsRelease(e: any) {
       this.$refs.dataGraph.chart.update();
-      console.log(e);
     },
     // updateDataSerials(e) {
     //   chartData.value = setChartData();
