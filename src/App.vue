@@ -182,6 +182,13 @@ let startDateTime: any = ref(null);
 // let endDateTime = useTemplateRef('endDateTime');
 let endDateTime: any = ref(null);
 
+let timeSlider: any = ref(null);
+
+let startTimeLabel: any = ref(null);
+let endTimeLabel: any = ref(null);
+
+let dataGraph: any = ref(null);
+
 let currentID = 0;
 
 export default {
@@ -206,7 +213,7 @@ export default {
   },
   methods: {
     resizeEvent() {
-      (this.$refs.dataGraph as any).reinit();
+      dataGraph.value.reinit();
     },
     async getData() {
       // create request
@@ -222,8 +229,8 @@ export default {
       dataSerials.value = null;
       dataFields.value = null;
 
-      let startDate = new Date(Date.parse((this.$refs.startDateTime as any).d_value));
-      let endDate = new Date(Date.parse((this.$refs.endDateTime as any).d_value));
+      let startDate = new Date(Date.parse(startDateTime.value.d_value));
+      let endDate = new Date(Date.parse(endDateTime.value.d_value));
       let startYear = startDate.getFullYear().toString().padStart(4, "0");
       let startMonth = (startDate.getMonth() + 1).toString().padStart(2, "0");
       let startDay = startDate.getDate().toString().padStart(2, "0");
@@ -257,16 +264,6 @@ export default {
       }
 
       this.processDataJSON(resp);
-      
-      // this.clearAllDataSelectors();
-
-      // preprocess data
-      // preprocessResponse(resp);
-
-      // this.updateTimeLimits([0, 100]);
-      // this.$refs.timeSlider.d_value = [0, 100];
-
-      // isPanelCollapsed.value = true;
     },
     loadCSVFile(e: any) {
 
@@ -289,14 +286,14 @@ export default {
 
       this.updateTimeLimits([0, 100]);
 
-      (this.$refs.timeSlider as {d_value: Array<Number>}).d_value = [0, 100];
+      timeSlider.value.d_value = [0, 100];
 
       isPanelCollapsed.value = true;
     },
     updateMinEndDT(e: any) {
       minEndDT.value = e;
-      if ((this.$refs.endDateTime as any).d_value < (this.$refs.startDateTime as any).d_value) {
-        (this.$refs.endDateTime as any).d_value = (this.$refs.startDateTime as any).d_value;
+      if (endDateTime.value.d_value < startDateTime.value.d_value) {
+        endDateTime.value.d_value = startDateTime.value.d_value;
       }
     },
     updateGraphStyle() {
@@ -307,7 +304,7 @@ export default {
     },
     updateTimeLimits(e: any) {
       if (e[1] < e[0]) {
-        (this.$refs.timeSlider as {d_value: Array<Number>}).d_value = [e[1], e[1]];
+        timeSlider.value.d_value = [e[1], e[1]];
         // return;
       }
       let timeDiff: number = maxXVal.value - minXVal.value;
@@ -318,19 +315,18 @@ export default {
       let newStartDate: Date = new Date(newStartX);
       let newEndDate: Date = new Date(newEndX);
 
-      (this.$refs.startTimeLabel as {innerText: String}).innerText = newStartDate.toLocaleString().replace(",", "");
-      (this.$refs.endTimeLabel as {innerText: String}).innerText = newEndDate.toLocaleString().replace(",", "");
+      startTimeLabel.value.innerText = newStartDate.toLocaleString().replace(",", "");
+      endTimeLabel.value.innerText = newEndDate.toLocaleString().replace(",", "");
 
       chartOptions.value.scales.x.min = newStartX;
       chartOptions.value.scales.x.max = newEndX;
-      // this.$refs.dataGraph.chart.update();
       if (window.performance.now() - lastLimitsUpdate >= 10) {
-        (this.$refs.dataGraph as {chart: any}).chart.update()
+        dataGraph.value.chart.update()
         lastLimitsUpdate = window.performance.now();
       }
     },
     onTimeLimitsRelease(e: any) {
-      (this.$refs.dataGraph as {chart: any}).chart.update();
+      dataGraph.value.chart.update();
     },
     addDataSelector() {
       const mountPoint = document.createElement("div");
