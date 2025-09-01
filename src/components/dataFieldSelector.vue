@@ -113,6 +113,8 @@ function updateData(e: any) {
     selectedField.value = e;
     if (e == 'Weather Perceivense') {
         updateDataAveraging('Raw');
+        updateMinMaxToggle(false);
+        graphSettings.value.minMaxToggle = false;
     }
     else {
         emitNewData();
