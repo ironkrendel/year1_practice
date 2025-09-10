@@ -1,1 +1,1 @@
-docker run -d --restart unless-stopped -p 80:443 -p 8080:443 year1_practice
+docker run -d --restart unless-stopped -p 80:80 -p 8080:80 year1_practice
