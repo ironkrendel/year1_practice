@@ -1,0 +1,1 @@
+openssl req -x509 -newkey rsa:4096 -sha512 -days 3650 -noenc -keyout www.kasaneteto.ru.key -out www.kasaneteto.ru.crt -subj "/CN=kasaneteto.ru" -addext "subjectAltName=DNS:kasaneteto.ru,DNS:*.kasaneteto.ru,DNS:localhost,IP:127.0.0.1,IP:0.0.0.0,IP:172.17.0.1"
